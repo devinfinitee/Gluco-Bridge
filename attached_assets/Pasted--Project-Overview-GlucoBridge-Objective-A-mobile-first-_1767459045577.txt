@@ -1,0 +1,95 @@
+
+Project Overview: GlucoBridge
+
+Objective: A mobile-first, responsive web app for blood glucose interpretation and cardiovascular health education.
+
+Core Value: Simplifying complex medical data into actionable, low-literacy-friendly guidance.
+
+1. Visual Identity & Design System
+
+Palette: * Primary: Deep Medical Blue (#1E5EFF)
+
+Secondary: Soft Teal/Cyan accents
+
+Status: Success (Soft Green), Warning (Amber), Error (Muted Red)
+
+Surface: Off-white background with white rounded cards (24px radius) and subtle elevation shadows.
+
+Typography: * Headings: Inter/Poppins Bold (High contrast).
+
+Body: Inter/Roboto Regular (Large line height for readability).
+
+Iconography: Thin-stroke outline icons with rounded terminals (e.g., Lucide or Feather Icons).
+
+2. Redefined Screen Flow
+
+Screen 1: Trust & Onboarding (The Hero)
+
+Visual: Full-height hero card with the GlucoBridge logo.
+
+Copy: "Understand Your Blood Sugar. Take the Next Step."
+
+Value Props: 3 icon-based bullet points (Screening, Guidance, Education).
+
+CTA: Large, full-width "Get Started" button.
+
+Screen 2: Risk Screening (Context Collection)
+
+UI: Stepper component (Step 1 of 3).
+
+Form: Large tap targets.
+
+Horizontal pill selectors for Age and Gender.
+
+Clean toggle switches for Family History and High Blood Pressure.
+
+Multi-select checkbox cards for Symptoms (Fatigue, Thirst, etc.).
+
+Screen 3: Data Entry (The Input)
+
+UI: Stepper (Step 2 of 3).
+
+Toggle: "Enter Manually" vs "Upload Photo" segmented control.
+
+Manual: Numerical input with a clear unit toggle (mg/dL | mmol/L).
+
+Vision: Image upload zone with a dashed border and camera icon.
+
+Screen 4: Interpretation & Integrated Education (The Insight)
+
+Dynamic Banner: Color-coded status (e.g., Orange for "Prediabetes Detected").
+
+Large Value Display: Bold center-aligned glucose number.
+
+The "Health Tips" Section (New): * Collapsible Accordion Cards: "How your heart & sugar connect."
+
+Card 1: Diabetes & Heart Disease (The link between high sugar and vessel damage).
+
+Card 2: Hypertension & Sugar (Managing dual risks).
+
+Card 3: Obesity & Insulin Resistance.
+
+Card 4: Smoking & Vascular Risk.
+
+AI Assistant: A floating chat-style bubble labeled "Educational AI" for follow-up questions.
+
+Screen 5: Action & Referrals (The Next Step)
+
+Recommendation Card: Specific advice based on the Screen 4 result.
+
+Next Steps Checklist: Interactive list (e.g., "Schedule follow-up," "Clinic locator").
+
+Primary CTA: "Find a Clinic Near You" (Blue).
+
+Secondary CTA: "Download Results PDF" (Outline).
+
+Footer: Permanent medical disclaimer in small, muted text.
+
+3. UX Principles to Maintain
+
+Single Task Focus: One primary action per screen to reduce cognitive load.
+
+Friendly Microcopy: Use "We" and "Your" (e.g., "Let's look at your health together").
+
+Low-Literacy Friendly: Use icons to support all text-based labels.
+

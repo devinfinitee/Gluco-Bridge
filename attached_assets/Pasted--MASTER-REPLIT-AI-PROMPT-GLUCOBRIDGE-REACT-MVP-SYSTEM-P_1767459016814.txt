@@ -1,0 +1,166 @@
+🧠 **MASTER REPLIT AI PROMPT — GLUCOBRIDGE (REACT MVP)
+
+> **SYSTEM / PROJECT INSTRUCTIONS — READ CAREFULLY**
+>
+> You are helping me build a **React + TypeScript healthcare web application** called **GlucoBridge** 
+>
+> This application is an **educational blood glucose screening tool**, NOT a diagnostic or treatment system.
+>
+> You MUST follow all rules below **strictly**.
+
+---
+
+## 🚨 **ABSOLUTE RULES (NON-NEGOTIABLE)**
+
+1. **Follow the project structure EXACTLY as provided**
+2. ❌ Do NOT create new folders
+3. ❌ Do NOT rename files
+4. ❌ Do NOT move files
+5. ❌ Do NOT add files unless I explicitly ask
+6. ❌ Do NOT refactor architecture on your own
+7. ❌ Do NOT mix responsibilities (UI, logic, AI)
+8. If something is missing or unclear → **ASK FIRST**
+9. Work **ONE FILE AT A TIME** only when instructed
+10. If you violate the structure, you must acknowledge and correct it
+
+---
+
+## 📁 **FINAL REACT PROJECT STRUCTURE**
+
+```text
+📦 gluco-bridge-frontend/
+├── public/
+│   └── index.html
+│
+├── src/
+│   ├── assets/
+│   │   ├── images/
+│   │   └── icons/
+│   │
+│   ├── components/
+│   │   ├── common/
+│   │   └── ui/
+│   │
+│   ├── pages/
+│   │   ├── Welcome/
+│   │   │   └── Welcome.tsx
+│   │   ├── RiskScreening/
+│   │   │   └── RiskScreening.tsx
+│   │   ├── GlucoseEntry/
+│   │   │   └── GlucoseEntry.tsx
+│   │   ├── Results/
+│   │   │   └── Results.tsx
+│   │   └── Referral/
+│   │       └── Referral.tsx
+│   │
+│   ├── services/
+│   │   ├── api.ts
+│   │   └── ai.ts
+│   │
+│   ├── hooks/
+│   │   └── useRiskAssessment.ts
+│   │
+│   ├── utils/
+│   │   └── glucoseRules.ts
+│   │
+│   ├── styles/
+│   │   └── global.css
+│   │
+│   ├── routes.tsx
+│   ├── App.tsx
+│   └── main.tsx
+│
+├── package.json
+└── README.md
+```
+
+---
+
+## 🩺 **MEDICAL & SAFETY RULES**
+
+* This app is **educational only**
+* No diagnosis
+* No prescriptions
+* No emergency decisions
+* AI must NEVER:
+
+  * Diagnose diabetes
+  * Prescribe medication
+  * Recommend insulin or drugs
+* All blood glucose interpretation logic MUST live in:
+
+  ```
+  src/utils/glucoseRules.ts
+  ```
+* AI is ONLY for:
+
+  * Explanation
+  * Education
+  * Clarification
+
+---
+
+## 🤖 **AI USAGE RULES**
+
+* AI calls must be placed ONLY in:
+
+  ```
+  src/services/ai.ts
+  ```
+* AI may:
+
+  * Explain results
+  * Answer general health questions
+* AI may NOT:
+
+  * Make clinical decisions
+  * Override rule-based logic
+* All AI outputs must include:
+
+  > “This information is for educational purposes only.”
+
+---
+
+## 🎯 **APP GOAL (MVP)**
+
+GlucoBridge has **5 screens only**:
+
+1. Welcome / About
+2. Risk Screening Questionnaire
+3. Blood Glucose Entry
+
+   * Manual entry
+   * Image upload (AI extracts value only)
+4. Result Interpretation + Education
+5. Referral & Next Steps
+
+---
+
+## 🎨 **UI PRINCIPLES**
+
+* Mobile-first
+* Clean healthcare design
+* Calm medical blue palette
+* Large readable text
+* One primary CTA per screen
+* Friendly, non-alarming language
+
+---
+
+## 🛠️ **HOW YOU MUST WORK**
+
+* Do NOT generate any code yet
+* First, confirm you understand ALL rules
+* Reply ONLY with:
+
+```
+REACT STRUCTURE CONFIRMED
+READY TO PROCEED
+```
+
+If anything is unclear, ask questions **instead of coding**.
+
+and only the Ui designs should strictly be done 
+no logic and any form of implementations should be done  
+
+
