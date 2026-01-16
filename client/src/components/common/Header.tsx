@@ -9,9 +9,15 @@ export function Header() {
           <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
             <Activity className="w-6 h-6 text-primary" />
           </div>
-          <span className="font-display font-bold text-xl tracking-tight text-foreground">
+          <span className="font-display font-bold text-2xl tracking-tight text-foreground">
             Gluco<span className="text-primary">Bridge</span>
           </span>
+        </Link>
+        
+        <Link href="/health-tips">
+          <button className="text-sm font-semibold text-primary hover:text-primary/80 transition-colors">
+            Health Tips
+          </button>
         </Link>
       </div>
     </header>

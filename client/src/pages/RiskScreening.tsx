@@ -47,16 +47,22 @@ export default function RiskScreening() {
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col">
-      <div className="sticky top-0 bg-white z-10 px-6 py-4 border-b border-slate-100">
+      <div className="sticky top-0 bg-white z-10 px-6 py-6 border-b border-slate-100">
         <div className="flex items-center justify-between mb-4">
           <Button variant="ghost" size="icon" onClick={() => window.history.back()} className="-ml-2">
             <ChevronLeft className="w-6 h-6" />
           </Button>
           <span className="text-sm font-semibold text-muted-foreground">
-            Risk Assessment
+            Know Your Risk
           </span>
           <div className="w-10" /> {/* Spacer */}
         </div>
+        
+        <div className="mb-4 bg-gradient-to-r from-blue-50 to-indigo-50 p-3 rounded-lg border border-blue-200">
+          <p className="text-xs font-semibold text-blue-900">💡 Early Detection Saves Lives</p>
+          <p className="text-xs text-blue-800 mt-1">Your answers help identify risk factors before complications develop.</p>
+        </div>
+
         <Progress value={progress} className="h-2" />
       </div>
 
@@ -72,8 +78,13 @@ export default function RiskScreening() {
               className="space-y-8"
             >
               <div>
-                <h2 className="text-2xl font-bold mb-2">About You</h2>
-                <p className="text-muted-foreground">Let's start with some basics.</p>
+                <h2 className="text-2xl font-bold mb-2">Know Your Baseline</h2>
+                <p className="text-muted-foreground">Basic information helps us assess your personal risk factors.</p>
+              </div>
+
+              <div className="bg-red-50 border border-red-200 rounded-lg p-4 space-y-2">
+                <p className="text-xs font-bold text-red-900">🚨 CRITICAL FACT</p>
+                <p className="text-sm text-red-800">Type 2 diabetes has NO early symptoms. You could be at risk right now without knowing it.</p>
               </div>
 
               <div className="space-y-4">
@@ -128,8 +139,13 @@ export default function RiskScreening() {
               className="space-y-8"
             >
               <div>
-                <h2 className="text-2xl font-bold mb-2">Medical History</h2>
-                <p className="text-muted-foreground">These factors can influence risk.</p>
+                <h2 className="text-2xl font-bold mb-2">Your Health Background</h2>
+                <p className="text-muted-foreground">These factors significantly increase or decrease your risk.</p>
+              </div>
+
+              <div className="bg-orange-50 border border-orange-200 rounded-lg p-4 space-y-2">
+                <p className="text-xs font-bold text-orange-900">⚠️ IMPORTANT RISK FACTORS</p>
+                <p className="text-sm text-orange-800">Family history of diabetes increases your risk by 50%. High blood pressure can triple your risk.</p>
               </div>
 
               <div className="space-y-4">
@@ -191,8 +207,13 @@ export default function RiskScreening() {
               className="space-y-8"
             >
               <div>
-                <h2 className="text-2xl font-bold mb-2">Symptoms</h2>
-                <p className="text-muted-foreground">Select any that you experience often.</p>
+                <h2 className="text-2xl font-bold mb-2">Current Symptoms</h2>
+                <p className="text-muted-foreground">Do you experience any of these warning signs?</p>
+              </div>
+
+              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 space-y-2">
+                <p className="text-xs font-bold text-yellow-900">⚠️ ACT NOW</p>
+                <p className="text-sm text-yellow-800">Even without symptoms, diabetes can develop. Your answers help us assess your current state.</p>
               </div>
 
               <div className="grid grid-cols-1 gap-3">

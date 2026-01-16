@@ -3,8 +3,10 @@ import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Camera, RefreshCcw, Loader2 } from "lucide-react";
-import { useAnalyzeImage } from "@/hooks/use-ai";
+import { CameraCapture } from "@/components/common/CameraCapture";
+import { callGeminiAPI } from "@/lib/geminiAPI";
 import { motion } from "framer-motion";
+import { useToast } from "@/hooks/use-toast";
 
 export default function GlucoseEntry() {
   const [_, setLocation] = useLocation();
@@ -12,9 +14,10 @@ export default function GlucoseEntry() {
   const [value, setValue] = useState('');
   const [unit, setUnit] = useState<'mg/dL' | 'mmol/L'>('mg/dL');
   const [testType, setTestType] = useState<'fasting' | 'random'>('random');
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [showCamera, setShowCamera] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  
-  const analyzeImage = useAnalyzeImage();
+  const { toast } = useToast();
 
   const handleNext = () => {
     // Merge existing data
@@ -29,30 +32,92 @@ export default function GlucoseEntry() {
     setLocation('/results');
   };
 
+  const handleCameraCapture = async (imageData: string) => {
+    setIsProcessing(true);
+    try {
+      console.log('Analyzing glucometer with Gemini...');
+      
+      const geminiPrompt = `Analyze this glucometer display image and extract the glucose value. Return ONLY the number and unit in this exact format: "VALUE UNIT" (e.g., "120 mg/dL" or "6.7 mmol/L"). If you cannot read the value clearly, respond with "CANNOT_READ".`;
+      
+      const geminiResponse = await callGeminiAPI(geminiPrompt, imageData);
+      
+      if (geminiResponse && !geminiResponse.includes('CANNOT_READ')) {
+        // Parse the Gemini response
+        const match = geminiResponse.trim().match(/(\d+(?:\.\d+)?)\s*(mg\/dL|mmol\/L)/i);
+        if (match) {
+          const glucoseValue = parseFloat(match[1]);
+          const glucoseUnit = match[2].toUpperCase() as 'mg/dL' | 'mmol/L';
+          
+          setValue(glucoseValue.toString());
+          setUnit(glucoseUnit);
+          setShowCamera(false);
+          setMode('manual');
+          
+          toast({
+            title: "Success!",
+            description: `Detected glucose value: ${glucoseValue} ${glucoseUnit}`,
+          });
+          return;
+        }
+      }
+      
+      // Gemini couldn't read the image
+      toast({
+        title: "Detection failed",
+        description: "Could not read the glucometer screen. Please enter manually.",
+        variant: "destructive",
+      });
+      setShowCamera(false);
+      setMode('manual');
+      
+    } catch (error) {
+      console.error("Failed to analyze glucometer:", error);
+      const errorMsg = error instanceof Error ? error.message : 'Unknown error';
+      toast({
+        title: "Error",
+        description: `Failed to process image: ${errorMsg}. Please enter manually.`,
+        variant: "destructive",
+      });
+      setShowCamera(false);
+      setMode('manual');
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    const reader = new FileReader();
-    reader.onload = async (event) => {
-      const base64 = event.target?.result as string;
-      try {
-        const result = await analyzeImage.mutateAsync({ image: base64 });
-        if (result.value) {
-          setValue(result.value.toString());
-          if (result.unit) setUnit(result.unit as any);
-          setMode('manual'); // Switch to manual to show extracted value
-        }
-      } catch (error) {
-        console.error("Failed to analyze", error);
-        alert("Could not read value from image. Please enter manually.");
-      }
-    };
-    reader.readAsDataURL(file);
+    setIsProcessing(true);
+    try {
+      const reader = new FileReader();
+      reader.onload = async (event) => {
+        const base64 = event.target?.result as string;
+        await handleCameraCapture(base64);
+      };
+      reader.readAsDataURL(file);
+    } catch (error) {
+      console.error("Failed to process file:", error);
+      toast({
+        title: "Error",
+        description: "Failed to upload image. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
   return (
     <div className="min-h-screen bg-slate-50 p-6 flex flex-col max-w-md mx-auto">
+      {showCamera && (
+        <CameraCapture 
+          onCapture={handleCameraCapture}
+          isProcessing={isProcessing}
+        />
+      )}
+
       <h1 className="text-3xl font-bold mb-2 mt-8">Glucose Entry</h1>
       <p className="text-muted-foreground mb-8">
         Enter your latest blood glucose reading.
@@ -133,7 +198,7 @@ export default function GlucoseEntry() {
         ) : (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex-1 flex flex-col items-center justify-center text-center space-y-6">
             <div className="w-24 h-24 bg-blue-50 rounded-full flex items-center justify-center relative overflow-hidden">
-              {analyzeImage.isPending ? (
+              {isProcessing ? (
                 <Loader2 className="w-10 h-10 text-primary animate-spin" />
               ) : (
                 <Camera className="w-10 h-10 text-primary" />
@@ -152,17 +217,29 @@ export default function GlucoseEntry() {
               accept="image/*" 
               className="hidden" 
               ref={fileInputRef}
-              onChange={handleImageUpload}
+              onChange={(e) => handleImageUpload(e)}
             />
-            
-            <Button 
-              size="lg" 
-              className="w-full" 
-              disabled={analyzeImage.isPending}
-              onClick={() => fileInputRef.current?.click()}
-            >
-              {analyzeImage.isPending ? 'Analyzing...' : 'Open Camera'}
-            </Button>
+
+            <div className="grid grid-cols-2 gap-3 w-full">
+              <Button
+                size="lg"
+                className="w-full"
+                disabled={isProcessing}
+                onClick={() => setShowCamera(true)}
+              >
+                {isProcessing ? 'Analyzing...' : 'Take Photo'}
+              </Button>
+
+              <Button
+                size="lg"
+                variant="outline"
+                className="w-full"
+                disabled={isProcessing}
+                onClick={() => fileInputRef.current?.click()}
+              >
+                Upload Photo
+              </Button>
+            </div>
           </motion.div>
         )}
       </div>
