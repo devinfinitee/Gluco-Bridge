@@ -1,12 +1,14 @@
 /**
  * Glucose validation utility
  * Ensures valid glucose readings with proper ranges
+ * Updated for commercial use with extended ranges
  */
 
 export interface GlucoseValidationResult {
   isValid: boolean;
   value: number | null;
   error?: string;
+  warning?: string; // Non-blocking warnings for extreme but valid readings
 }
 
 export interface BMIResult {
@@ -18,10 +20,10 @@ export interface BMIResult {
 }
 
 /**
- * Validate glucose reading
+ * Validate glucose reading with commercial-grade ranges
  * @param value - The glucose value to validate
  * @param unit - Unit of measurement (mg/dL or mmol/L)
- * @returns Validation result with error message if invalid
+ * @returns Validation result with error message if invalid, warning if extreme
  */
 export function validateGlucose(value: string | number, unit: 'mg/dL' | 'mmol/L'): GlucoseValidationResult {
   // Check if value is empty
@@ -53,37 +55,75 @@ export function validateGlucose(value: string | number, unit: 'mg/dL' | 'mmol/L'
     };
   }
 
-  // Validate based on unit
+  // Validate based on unit - Commercial ranges
   if (unit === 'mg/dL') {
-    // Normal range: 40-500 mg/dL (practical limits)
-    if (numValue < 40) {
+    // Hard limits: 10-800 mg/dL (covers extreme medical cases)
+    // Warning range: <20 or >600 mg/dL (critical values)
+    // Normal acceptance: 20-600 mg/dL
+    
+    if (numValue < 10) {
       return {
         isValid: false,
         value: null,
-        error: 'Value seems too low (below 40 mg/dL). Check your reading.'
+        error: 'Value too low (below 10 mg/dL). Please verify your glucometer reading.'
       };
     }
-    if (numValue > 500) {
+    if (numValue > 800) {
       return {
         isValid: false,
         value: null,
-        error: 'Value seems too high (above 500 mg/dL). Check your reading.'
+        error: 'Value too high (above 800 mg/dL). Please verify your glucometer reading.'
+      };
+    }
+    
+    // Warning for extreme but valid values
+    if (numValue < 20) {
+      return {
+        isValid: true,
+        value: numValue,
+        warning: 'This is an extremely low reading. If accurate, seek immediate medical attention.'
+      };
+    }
+    if (numValue > 600) {
+      return {
+        isValid: true,
+        value: numValue,
+        warning: 'This is an extremely high reading. If accurate, seek immediate medical attention.'
       };
     }
   } else {
-    // mmol/L range: 2.2-27.8 mmol/L (practical limits)
-    if (numValue < 2.2) {
+    // mmol/L range: 0.6-44.4 mmol/L (commercial limits)
+    // Warning range: <1.1 or >33.3 mmol/L (critical values)
+    // Normal acceptance: 1.1-33.3 mmol/L
+    
+    if (numValue < 0.6) {
       return {
         isValid: false,
         value: null,
-        error: 'Value seems too low (below 2.2 mmol/L). Check your reading.'
+        error: 'Value too low (below 0.6 mmol/L). Please verify your glucometer reading.'
       };
     }
-    if (numValue > 27.8) {
+    if (numValue > 44.4) {
       return {
         isValid: false,
         value: null,
-        error: 'Value seems too high (above 27.8 mmol/L). Check your reading.'
+        error: 'Value too high (above 44.4 mmol/L). Please verify your glucometer reading.'
+      };
+    }
+    
+    // Warning for extreme but valid values
+    if (numValue < 1.1) {
+      return {
+        isValid: true,
+        value: numValue,
+        warning: 'This is an extremely low reading. If accurate, seek immediate medical attention.'
+      };
+    }
+    if (numValue > 33.3) {
+      return {
+        isValid: true,
+        value: numValue,
+        warning: 'This is an extremely high reading. If accurate, seek immediate medical attention.'
       };
     }
   }

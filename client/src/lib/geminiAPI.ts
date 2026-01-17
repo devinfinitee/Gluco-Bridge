@@ -61,11 +61,14 @@ export async function scanGlucometer(base64Image: string): Promise<string> {
 Your task is to accurately extract the blood glucose reading from the provided image.
 
 Instructions:
-1. Identify the numerical glucose value displayed on the device
-2. Identify the unit of measurement (mg/dL or mmol/L)
-3. Return ONLY the value and unit in this exact format: "[VALUE] [UNIT]"
-4. If you cannot read the value clearly, respond with "UNREADABLE"
-5. Do not include any other text or explanation`;
+1. Identify the numerical glucose value displayed on the device (e.g., 107, 5.6, 180)
+2. Identify the unit of measurement shown on the device
+3. Return ONLY the value and unit in this EXACT format: "VALUE UNIT"
+   - For mg/dL units, respond like: "107 mg/dL" or "180 mg/dL"
+   - For mmol/L units, respond like: "5.6 mmol/L" or "8.2 mmol/L"
+4. If the unit is not visible, assume mg/dL (most common in US devices)
+5. If you cannot read the value clearly, respond with "UNREADABLE"
+6. Do not include brackets, quotes, or any other text`;
 
     const userPrompt =
       "Please read the glucose monitor display and provide the blood glucose value and unit.";

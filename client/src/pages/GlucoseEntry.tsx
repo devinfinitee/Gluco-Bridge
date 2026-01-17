@@ -2,7 +2,7 @@ import { useState, useRef } from "react";
 import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Camera, RefreshCcw, Loader2, AlertCircle } from "lucide-react";
+import { Camera, RefreshCcw, Loader2, AlertCircle, AlertTriangle } from "lucide-react";
 import { CameraCapture } from "@/components/common/CameraCapture";
 import { callGeminiAPI } from "@/lib/geminiAPI";
 import { motion } from "framer-motion";
@@ -18,6 +18,7 @@ export default function GlucoseEntry() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [showCamera, setShowCamera] = useState(false);
   const [validationError, setValidationError] = useState<string>('');
+  const [validationWarning, setValidationWarning] = useState<string>('');
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
@@ -57,27 +58,92 @@ export default function GlucoseEntry() {
       
       const geminiResponse = await callGeminiAPI(geminiPrompt, imageData);
       
-      if (geminiResponse && !geminiResponse.includes('CANNOT_READ')) {
-        // Parse the Gemini response
-        const match = geminiResponse.trim().match(/(\d+(?:\.\d+)?)\s*(mg\/dL|mmol\/L)/i);
-        if (match) {
-          const glucoseValue = parseFloat(match[1]);
-          const glucoseUnit = match[2].toUpperCase() as 'mg/dL' | 'mmol/L';
+      if (geminiResponse && !geminiResponse.includes('CANNOT_READ') && !geminiResponse.includes('UNREADABLE')) {
+        // Try multiple parsing patterns for better compatibility
+        let glucoseValue: number | null = null;
+        let glucoseUnit: 'mg/dL' | 'mmol/L' = 'mg/dL';
+        
+        // Clean response - remove common artifacts
+        const cleanResponse = geminiResponse.trim()
+          .replace(/[\[\]"'`]/g, '') // Remove brackets, quotes
+          .replace(/\s+/g, ' '); // Normalize whitespace
+        
+        // Pattern 1: Standard format "VALUE UNIT" (e.g., "107 mg/dL" or "5.6 mmol/L")
+        const standardMatch = cleanResponse.match(/(\d+(?:\.\d+)?)\s*(mg\/dL|mmol\/L|mg\/dl|MMOL\/L|MG\/DL)/i);
+        if (standardMatch) {
+          glucoseValue = parseFloat(standardMatch[1]);
+          const unitLower = standardMatch[2].toLowerCase();
+          glucoseUnit = unitLower === 'mg/dl' ? 'mg/dL' : 'mmol/L';
+        } 
+        // Pattern 2: Alternative formats like "107mg/dL" (no space)
+        else {
+          const compactMatch = cleanResponse.match(/(\d+(?:\.\d+)?)(mg\/dL|mmol\/L|mg\/dl|MMOL\/L|MG\/DL)/i);
+          if (compactMatch) {
+            glucoseValue = parseFloat(compactMatch[1]);
+            const unitLower = compactMatch[2].toLowerCase();
+            glucoseUnit = unitLower === 'mg/dl' ? 'mg/dL' : 'mmol/L';
+          }
+          // Pattern 3: Just a number - intelligent unit detection
+          else {
+            const numberMatch = cleanResponse.match(/(\d+(?:\.\d+)?)/);
+            if (numberMatch) {
+              const value = parseFloat(numberMatch[1]);
+              // Smart detection based on typical ranges:
+              // mmol/L: 0.6-44.4 (typically 2-20)
+              // mg/dL: 10-800 (typically 40-400)
+              // Threshold: values below 25 are likely mmol/L
+              if (value < 25) {
+                glucoseValue = value;
+                glucoseUnit = 'mmol/L';
+              } else {
+                glucoseValue = value;
+                glucoseUnit = 'mg/dL';
+              }
+            }
+          }
+        }
+        
+        if (glucoseValue !== null) {
+          // Validate the extracted value
+          const validation = validateGlucose(glucoseValue, glucoseUnit);
           
-          setValue(glucoseValue.toString());
-          setUnit(glucoseUnit);
-          setShowCamera(false);
-          setMode('manual');
-          
-          toast({
-            title: "Success!",
-            description: `Detected glucose value: ${glucoseValue} ${glucoseUnit}`,
-          });
-          return;
+          if (validation.isValid) {
+            setValue(glucoseValue.toString());
+            setUnit(glucoseUnit);
+            setShowCamera(false);
+            setMode('manual');
+            
+            // Show success with warning if present
+            if (validation.warning) {
+              toast({
+                title: "Reading Detected",
+                description: `${glucoseValue} ${glucoseUnit} - ${validation.warning}`,
+                variant: "destructive",
+              });
+            } else {
+              toast({
+                title: "Success!",
+                description: `Detected glucose value: ${glucoseValue} ${glucoseUnit}`,
+              });
+            }
+            return;
+          } else {
+            // Value parsed but validation failed - let user know
+            toast({
+              title: "Invalid Reading",
+              description: `Detected ${glucoseValue} ${glucoseUnit}, but ${validation.error}. Please verify and enter manually.`,
+              variant: "destructive",
+            });
+            setValue(glucoseValue.toString());
+            setUnit(glucoseUnit);
+            setShowCamera(false);
+            setMode('manual');
+            return;
+          }
         }
       }
       
-      // Gemini couldn't read the image
+      // Gemini couldn't read the image or parsing failed
       toast({
         title: "Detection failed",
         description: "Could not read the glucometer screen. Please enter manually.",
@@ -200,17 +266,19 @@ export default function GlucoseEntry() {
                    value={value}
                    onChange={(e) => {
                      setValue(e.target.value);
+                     setValidationError('');
+                     setValidationWarning('');
                      if (e.target.value) {
                        const validation = validateGlucose(e.target.value, unit);
                        if (!validation.isValid) {
                          setValidationError(validation.error || '');
-                       } else {
-                         setValidationError('');
+                       } else if (validation.warning) {
+                         setValidationWarning(validation.warning);
                        }
                      }
                    }}
                    className={`text-4xl h-20 rounded-2xl text-center font-display font-bold ${
-                     validationError ? 'border-red-500 border-2' : ''
+                     validationError ? 'border-red-500 border-2' : validationWarning ? 'border-orange-500 border-2' : ''
                    }`}
                    min="0"
                    step="0.1"
@@ -227,6 +295,12 @@ export default function GlucoseEntry() {
                  <div className="flex items-center gap-2 p-3 bg-red-50 border border-red-200 rounded-lg">
                    <AlertCircle className="w-4 h-4 text-red-600 flex-shrink-0" />
                    <p className="text-sm text-red-600">{validationError}</p>
+                 </div>
+               )}
+               {validationWarning && !validationError && (
+                 <div className="flex items-center gap-2 p-3 bg-orange-50 border border-orange-200 rounded-lg">
+                   <AlertTriangle className="w-4 h-4 text-orange-600 flex-shrink-0" />
+                   <p className="text-sm text-orange-600">{validationWarning}</p>
                  </div>
                )}
             </div>
