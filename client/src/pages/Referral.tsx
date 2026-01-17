@@ -1,8 +1,35 @@
+import { useState } from "react";
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
-import { MapPin, Phone, Calendar, ArrowLeft, ExternalLink } from "lucide-react";
+import { MapPin, Phone, Calendar, ArrowLeft, ExternalLink, Loader2 } from "lucide-react";
 
 export default function Referral() {
+  const [finding, setFinding] = useState<"labs" | "clinics" | null>(null);
+
+  // Open Google Maps search, using geolocation when available
+  const openMapsSearch = (query: string, kind: "labs" | "clinics") => {
+    setFinding(kind);
+
+    const launch = (coords?: GeolocationCoordinates) => {
+      const queryText = coords
+        ? `${query} near ${coords.latitude},${coords.longitude}`
+        : `${query} near me`;
+      const url = `https://www.google.com/maps/search/${encodeURIComponent(queryText)}`;
+      window.open(url, "_blank", "noopener,noreferrer");
+      setFinding(null);
+    };
+
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (pos) => launch(pos.coords),
+        () => launch(),
+        { enableHighAccuracy: true, timeout: 8000 }
+      );
+    } else {
+      launch();
+    }
+  };
+
   return (
     <div className="min-h-screen bg-slate-50">
       <div className="container mx-auto px-6 py-8 max-w-md">
@@ -36,8 +63,21 @@ export default function Referral() {
             <p className="text-sm text-red-800 mb-4">
               Verify your risk with a certified HbA1c test from a lab or clinic within 2 weeks. This is not a medical diagnosis—get professional confirmation.
             </p>
-            <Button className="w-full bg-red-600 hover:bg-red-700">
-              Find Certified Labs <ExternalLink className="w-4 h-4 ml-2" />
+            <Button
+              className="w-full bg-red-600 hover:bg-red-700"
+              onClick={() => openMapsSearch("HbA1c testing laboratory", "labs")}
+              disabled={finding === "labs"}
+            >
+              {finding === "labs" ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Finding labs near you...
+                </>
+              ) : (
+                <>
+                  Find Certified Labs <ExternalLink className="w-4 h-4 ml-2" />
+                </>
+              )}
             </Button>
           </div>
 
@@ -50,8 +90,22 @@ export default function Referral() {
             <p className="text-sm text-muted-foreground mb-4">
               Locate nearby clinics or hospitals for a comprehensive evaluation and treatment plan.
             </p>
-            <Button variant="outline" className="w-full justify-between group">
-              Find Healthcare Facilities <ExternalLink className="w-4 h-4 text-muted-foreground group-hover:text-foreground" />
+            <Button
+              variant="outline"
+              className="w-full justify-between group"
+              onClick={() => openMapsSearch("doctor or clinic", "clinics")}
+              disabled={finding === "clinics"}
+            >
+              {finding === "clinics" ? (
+                <span className="flex items-center">
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Finding providers...
+                </span>
+              ) : (
+                <>
+                  Find Healthcare Facilities <ExternalLink className="w-4 h-4 text-muted-foreground group-hover:text-foreground" />
+                </>
+              )}
             </Button>
           </div>
 
@@ -81,15 +135,19 @@ export default function Referral() {
             <div className="w-12 h-12 bg-orange-50 rounded-2xl flex items-center justify-center mb-4 text-orange-500">
               <Phone className="w-6 h-6" />
             </div>
-            <h3 className="font-bold text-lg mb-2">Get Support</h3>
+            <h3 className="font-bold text-lg mb-2">Get Support (Nigeria)</h3>
             <div className="space-y-3">
               <div className="p-3 bg-slate-50 rounded-xl">
-                <p className="font-semibold text-sm text-slate-900">WHO Diabetes Resources</p>
-                <p className="text-xs text-slate-700 mt-1">www.who.int/diabetes</p>
+                <p className="font-semibold text-sm text-slate-900">Diabetes Association of Nigeria</p>
+                <p className="text-xs text-slate-700 mt-1">https://diabetesnigeria.org</p>
               </div>
               <div className="p-3 bg-slate-50 rounded-xl">
-                <p className="font-semibold text-sm text-slate-900">International Diabetes Federation</p>
-                <p className="text-xs text-slate-700 mt-1">www.idf.org</p>
+                <p className="font-semibold text-sm text-slate-900">NCDC Connect Centre</p>
+                <p className="text-xs text-slate-700 mt-1">Dial 6232 (24/7 health support)</p>
+              </div>
+              <div className="p-3 bg-slate-50 rounded-xl">
+                <p className="font-semibold text-sm text-slate-900">National Emergency Line</p>
+                <p className="text-xs text-slate-700 mt-1">Dial 112 for urgent assistance</p>
               </div>
             </div>
           </div>
