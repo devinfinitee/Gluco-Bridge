@@ -226,19 +226,3 @@ export default function Referral() {
     </div>
   );
 }
-              </div>
-            </div>
-          </div>
-
-          {/* Important Notice */}
-          <div className="bg-blue-50 border border-blue-200 rounded-2xl p-4">
-            <p className="text-xs font-bold text-blue-900 mb-2">⚕️ Medical Disclaimer</p>
-            <p className="text-xs text-blue-800">
-              Gluco-Bridge is an educational tool, not a medical diagnosis. Your results are estimates based on general risk factors. Always consult licensed healthcare professionals for diagnosis, treatment, and medical decisions.
-            </p>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
