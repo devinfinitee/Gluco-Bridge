@@ -109,6 +109,12 @@ export default function Welcome() {
               Start Your Health Journey <ArrowRight className="ml-2 w-5 h-5" />
             </Button>
           </Link>
+
+          <Link href="/bmi">
+            <Button variant="outline" size="lg" className="w-full text-base">
+              Calculate Your BMI
+            </Button>
+          </Link>
           
           <Link href="/health-tips">
             <Button variant="outline" size="lg" className="w-full text-base">

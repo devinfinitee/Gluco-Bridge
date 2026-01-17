@@ -9,6 +9,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { generateSuggestedQuestions, callGeminiAPI } from "@/lib/geminiAPI";
 import { CameraCapture } from "@/components/common/CameraCapture";
 import { useToast } from "@/hooks/use-toast";
+import { calculateBMI } from "@/utils/validation";
 
 export default function Results() {
   const [data, setData] = useState<any>(null);
@@ -207,6 +208,28 @@ export default function Results() {
         <p className="mt-6 text-muted-foreground leading-relaxed max-w-xs mx-auto text-sm">
           {interpretation.description}
         </p>
+
+        {/* BMI Display if available */}
+        {data.bmi && (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.3 }}
+            className="mt-6 pt-6 border-t border-slate-200"
+          >
+            <p className="text-xs text-muted-foreground mb-3 uppercase tracking-wide font-semibold">BMI Assessment</p>
+            <div className="flex items-center justify-center gap-6">
+              <div className="text-center">
+                <span className="text-3xl font-bold text-slate-900">{data.bmi}</span>
+                <p className="text-xs text-muted-foreground mt-1">Your BMI</p>
+              </div>
+              <div className="text-left">
+                <p className="font-semibold text-sm text-slate-700">{data.bmiCategory}</p>
+                <p className="text-xs text-muted-foreground">Category</p>
+              </div>
+            </div>
+          </motion.div>
+        )}
       </div>
 
       <div className="px-6 -mt-8 relative z-10 max-w-md mx-auto space-y-6">

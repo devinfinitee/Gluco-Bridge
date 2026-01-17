@@ -1,8 +1,9 @@
 /**
  * geminiAPI.ts - Rewritten Jan 2026
- * Uses Gemini 2.5 Flash with improved error handling
+ * Uses Gemini 2.5 Flash with improved error handling and rate limiting
  */
 import { GoogleGenerativeAI } from "@google/generative-ai";
+import { visionLimiter, chatLimiter, formatRateLimitError } from "./rateLimiter";
 
 export interface GeminiMessage {
   role: "user" | "model";
@@ -39,8 +40,17 @@ function getGeminiClient(): GoogleGenerativeAI {
 /**
  * Scan and extract glucose value from monitor images
  * Uses Gemini 2.5 Flash model for OCR accuracy
+ * Rate limited to prevent API quota exhaustion
  */
 export async function scanGlucometer(base64Image: string): Promise<string> {
+  // Check rate limit for vision API (expensive operation)
+  const rateLimitStatus = visionLimiter.check('glucometer');
+  
+  if (rateLimitStatus.isLimited) {
+    const errorMessage = formatRateLimitError(rateLimitStatus);
+    throw new Error(errorMessage);
+  }
+
   try {
     const client = getGeminiClient();
     const model = client.getGenerativeModel({
@@ -89,6 +99,10 @@ Instructions:
 
     if (error instanceof Error) {
       const errorMsg = error.message.toLowerCase();
+      if (errorMsg.includes("rate limit") || errorMsg.includes("please wait")) {
+        // Re-throw rate limit errors as-is
+        throw error;
+      }
       if (
         errorMsg.includes("api_key") ||
         errorMsg.includes("unauthenticated")
@@ -271,7 +285,7 @@ export function generateSuggestedQuestions(
 }
 
 /**
- * Enhanced callGeminiAPI with context support
+ * Enhanced callGeminiAPI with context support and rate limiting
  * Overloaded function that accepts glucose context for better responses
  */
 export async function callGeminiAPI(
@@ -284,17 +298,31 @@ export async function callGeminiAPI(
   },
 ): Promise<string> {
   try {
-    const client = getGeminiClient();
-    const model = client.getGenerativeModel({
-      model: "gemini-2.5-flash",
-    });
-
     // Determine if historyOrImage is a history array or base64 image string
     const isImage =
       typeof historyOrImage === "string" &&
       (historyOrImage.includes("data:") ||
         historyOrImage.includes("/") ||
         historyOrImage.length > 500);
+
+    // For image analysis, use vision limiter
+    if (isImage) {
+      const rateLimitStatus = visionLimiter.check('image-analysis');
+      if (rateLimitStatus.isLimited) {
+        throw new Error(formatRateLimitError(rateLimitStatus));
+      }
+    } else {
+      // For chat, use chat limiter
+      const rateLimitStatus = chatLimiter.check('chat');
+      if (rateLimitStatus.isLimited) {
+        throw new Error(formatRateLimitError(rateLimitStatus));
+      }
+    }
+
+    const client = getGeminiClient();
+    const model = client.getGenerativeModel({
+      model: "gemini-2.5-flash",
+    });
 
     // Case 1: Image analysis (glucometer scanning)
     if (isImage) {
@@ -362,6 +390,12 @@ export async function callGeminiAPI(
 
     if (error instanceof Error) {
       const errorMsg = error.message.toLowerCase();
+      
+      // Rate limit errors - pass through as-is
+      if (errorMsg.includes("rate limit") || errorMsg.includes("please wait")) {
+        throw error;
+      }
+      
       if (
         errorMsg.includes("unauthenticated") ||
         errorMsg.includes("api_key")

@@ -15,8 +15,8 @@ export default function RiskScreening() {
   
   const [formData, setFormData] = useState<Partial<InsertScreening>>({
     symptoms: [],
-    familyHistory: false,
-    highBp: false,
+    familyHistory: 'no',
+    highBp: 'no',
   });
 
   const handleNext = () => {
@@ -150,9 +150,9 @@ export default function RiskScreening() {
 
               <div className="space-y-4">
                 <div 
-                  onClick={() => updateField('familyHistory', !formData.familyHistory)}
+                  onClick={() => updateField('familyHistory', formData.familyHistory === 'yes' ? 'no' : 'yes')}
                   className={`p-5 rounded-xl border-2 cursor-pointer transition-all ${
-                    formData.familyHistory
+                    formData.familyHistory === 'yes'
                       ? 'border-primary bg-primary/5'
                       : 'border-slate-100 bg-white'
                   }`}
@@ -165,15 +165,15 @@ export default function RiskScreening() {
                       </p>
                     </div>
                     <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${
-                      formData.familyHistory ? 'border-primary bg-primary text-white' : 'border-slate-300'
+                      formData.familyHistory === 'yes' ? 'border-primary bg-primary text-white' : 'border-slate-300'
                     }`}>
-                      {formData.familyHistory && <Check className="w-4 h-4" />}
+                      {formData.familyHistory === 'yes' && <Check className="w-4 h-4" />}
                     </div>
                   </div>
                 </div>
 
                 <div 
-                  onClick={() => updateField('highBp', !formData.highBp)}
+                  onClick={() => updateField('highBp', formData.highBp === 'yes' ? 'no' : 'yes')}
                   className={`p-5 rounded-xl border-2 cursor-pointer transition-all ${
                     formData.highBp
                       ? 'border-primary bg-primary/5'
@@ -188,9 +188,9 @@ export default function RiskScreening() {
                       </p>
                     </div>
                     <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${
-                      formData.highBp ? 'border-primary bg-primary text-white' : 'border-slate-300'
+                      formData.highBp === 'yes' ? 'border-primary bg-primary text-white' : 'border-slate-300'
                     }`}>
-                      {formData.highBp && <Check className="w-4 h-4" />}
+                      {formData.highBp === 'yes' && <Check className="w-4 h-4" />}
                     </div>
                   </div>
                 </div>

@@ -8,6 +8,7 @@ import NotFound from "@/pages/not-found";
 import Welcome from "@/pages/Welcome";
 import RiskScreening from "@/pages/RiskScreening";
 import GlucoseEntry from "@/pages/GlucoseEntry";
+import BMICalculator from "@/pages/BMICalculator";
 import Results from "@/pages/Results";
 import Referral from "@/pages/Referral";
 import HealthTips from "@/pages/HealthTips";
@@ -19,6 +20,7 @@ function Router() {
       <Route path="/" component={Welcome} />
       <Route path="/screening" component={RiskScreening} />
       <Route path="/glucose" component={GlucoseEntry} />
+      <Route path="/bmi" component={BMICalculator} />
       <Route path="/results" component={Results} />
       <Route path="/referral" component={Referral} />
       <Route path="/health-tips" component={HealthTips} />

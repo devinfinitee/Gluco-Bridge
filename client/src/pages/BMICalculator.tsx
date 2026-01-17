@@ -1,0 +1,215 @@
+import { useState } from "react";
+import { useLocation } from "wouter";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { AlertCircle, CheckCircle2, ArrowRight } from "lucide-react";
+import { motion } from "framer-motion";
+import { useToast } from "@/hooks/use-toast";
+import { calculateBMI, validateBMIInputs } from "@/utils/validation";
+import type { BMIResult } from "@/utils/validation";
+
+export default function BMICalculator() {
+  const [_, setLocation] = useLocation();
+  const [weight, setWeight] = useState('');
+  const [height, setHeight] = useState('');
+  const [weightUnit, setWeightUnit] = useState<'kg' | 'lbs'>('kg');
+  const [heightUnit, setHeightUnit] = useState<'cm' | 'ft'>('cm');
+  const [bmiResult, setBmiResult] = useState<BMIResult | null>(null);
+  const [validationError, setValidationError] = useState('');
+  const { toast } = useToast();
+
+  // Convert weight to kg if needed
+  const getWeightInKg = (w: number, unit: 'kg' | 'lbs'): number => {
+    return unit === 'lbs' ? w * 0.453592 : w;
+  };
+
+  // Convert height to cm if needed
+  const getHeightInCm = (h: number, unit: 'cm' | 'ft'): number => {
+    return unit === 'ft' ? h * 30.48 : h;
+  };
+
+  const handleCalculate = () => {
+    setValidationError('');
+    
+    // Get weights and heights in metric
+    const weightInKg = weight ? getWeightInKg(parseFloat(weight), weightUnit) : 0;
+    const heightInCm = height ? getHeightInCm(parseFloat(height), heightUnit) : 0;
+
+    // Validate inputs
+    const validation = validateBMIInputs(weightInKg, heightInCm);
+    if (!validation.isValid) {
+      setValidationError(validation.error || 'Invalid input');
+      toast({
+        title: "Invalid Input",
+        description: validation.error,
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      const result = calculateBMI(validation.weight!, validation.height!);
+      setBmiResult(result);
+      
+      toast({
+        title: "BMI Calculated",
+        description: `Your BMI is ${result.bmi} (${result.categoryDisplay})`,
+      });
+    } catch (error) {
+      const errorMsg = error instanceof Error ? error.message : 'Failed to calculate BMI';
+      setValidationError(errorMsg);
+      toast({
+        title: "Calculation Error",
+        description: errorMsg,
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleNext = () => {
+    if (!bmiResult) {
+      toast({
+        title: "Calculate BMI First",
+        description: "Please calculate your BMI before proceeding",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const existing = JSON.parse(localStorage.getItem('screeningData') || '{}');
+    const completeData = {
+      ...existing,
+      bmi: bmiResult.bmi,
+      bmiCategory: bmiResult.category,
+      weight: weight,
+      height: height,
+      weightUnit,
+      heightUnit
+    };
+    localStorage.setItem('screeningData', JSON.stringify(completeData));
+    setLocation('/results');
+  };
+
+  return (
+    <div className="min-h-screen bg-slate-50 p-6 flex flex-col max-w-md mx-auto">
+      <h1 className="text-3xl font-bold mb-2 mt-8">BMI Calculator</h1>
+      <p className="text-muted-foreground mb-8">
+        Calculate your Body Mass Index to assess your health.
+      </p>
+
+      <div className="bg-white rounded-3xl p-8 shadow-sm border border-slate-100 flex-1 flex flex-col">
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-8">
+          {/* Weight Input */}
+          <div className="space-y-4">
+            <label className="text-sm font-bold text-slate-700 uppercase tracking-wider">Weight</label>
+            <div className="flex gap-2">
+              <Input
+                type="number"
+                placeholder="Enter weight"
+                value={weight}
+                onChange={(e) => {
+                  setWeight(e.target.value);
+                  setBmiResult(null);
+                  setValidationError('');
+                }}
+                className="flex-1 text-lg h-14 rounded-2xl"
+                min="0"
+                step="0.1"
+              />
+              <button
+                onClick={() => setWeightUnit(weightUnit === 'kg' ? 'lbs' : 'kg')}
+                className="h-14 w-20 rounded-2xl bg-slate-100 font-semibold text-slate-600 flex items-center justify-center active:scale-95 transition-transform"
+              >
+                {weightUnit}
+              </button>
+            </div>
+          </div>
+
+          {/* Height Input */}
+          <div className="space-y-4">
+            <label className="text-sm font-bold text-slate-700 uppercase tracking-wider">Height</label>
+            <div className="flex gap-2">
+              <Input
+                type="number"
+                placeholder="Enter height"
+                value={height}
+                onChange={(e) => {
+                  setHeight(e.target.value);
+                  setBmiResult(null);
+                  setValidationError('');
+                }}
+                className="flex-1 text-lg h-14 rounded-2xl"
+                min="0"
+                step="0.1"
+              />
+              <button
+                onClick={() => setHeightUnit(heightUnit === 'cm' ? 'ft' : 'cm')}
+                className="h-14 w-20 rounded-2xl bg-slate-100 font-semibold text-slate-600 flex items-center justify-center active:scale-95 transition-transform"
+              >
+                {heightUnit}
+              </button>
+            </div>
+          </div>
+
+          {/* Validation Error */}
+          {validationError && (
+            <div className="flex items-center gap-2 p-3 bg-red-50 border border-red-200 rounded-lg">
+              <AlertCircle className="w-4 h-4 text-red-600 flex-shrink-0" />
+              <p className="text-sm text-red-600">{validationError}</p>
+            </div>
+          )}
+
+          {/* Calculate Button */}
+          <Button
+            size="lg"
+            className="w-full text-lg h-14"
+            onClick={handleCalculate}
+            disabled={!weight || !height}
+          >
+            Calculate BMI
+          </Button>
+
+          {/* BMI Result */}
+          {bmiResult && (
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className={`p-6 rounded-2xl border-2 ${bmiResult.color}`}
+            >
+              <div className="flex items-start gap-3">
+                <CheckCircle2 className="w-6 h-6 flex-shrink-0 mt-1" />
+                <div className="flex-1">
+                  <h3 className="text-2xl font-bold mb-1">{bmiResult.bmi}</h3>
+                  <p className="font-semibold mb-2">{bmiResult.categoryDisplay}</p>
+                  <p className="text-sm opacity-90">{bmiResult.description}</p>
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </motion.div>
+      </div>
+
+      {/* Navigation Buttons */}
+      <div className="mt-8 space-y-3">
+        {bmiResult && (
+          <Button
+            size="lg"
+            className="w-full text-lg h-14 shadow-lg shadow-blue-500/20"
+            onClick={handleNext}
+          >
+            Continue
+            <ArrowRight className="w-5 h-5 ml-2" />
+          </Button>
+        )}
+        <Button
+          size="lg"
+          variant="outline"
+          className="w-full text-lg h-14"
+          onClick={() => setLocation('/')}
+        >
+          Back to Home
+        </Button>
+      </div>
+    </div>
+  );
+}

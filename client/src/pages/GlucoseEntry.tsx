@@ -2,11 +2,12 @@ import { useState, useRef } from "react";
 import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Camera, RefreshCcw, Loader2 } from "lucide-react";
+import { Camera, RefreshCcw, Loader2, AlertCircle } from "lucide-react";
 import { CameraCapture } from "@/components/common/CameraCapture";
 import { callGeminiAPI } from "@/lib/geminiAPI";
 import { motion } from "framer-motion";
 import { useToast } from "@/hooks/use-toast";
+import { validateGlucose } from "@/utils/validation";
 
 export default function GlucoseEntry() {
   const [_, setLocation] = useLocation();
@@ -16,15 +17,30 @@ export default function GlucoseEntry() {
   const [testType, setTestType] = useState<'fasting' | 'random'>('random');
   const [isProcessing, setIsProcessing] = useState(false);
   const [showCamera, setShowCamera] = useState(false);
+  const [validationError, setValidationError] = useState<string>('');
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
   const handleNext = () => {
-    // Merge existing data
+    // Validate glucose input
+    const validation = validateGlucose(value, unit);
+    
+    if (!validation.isValid) {
+      setValidationError(validation.error || 'Invalid glucose value');
+      toast({
+        title: "Invalid Input",
+        description: validation.error || 'Please enter a valid glucose value',
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Clear error and proceed
+    setValidationError('');
     const existing = JSON.parse(localStorage.getItem('screeningData') || '{}');
     const completeData = {
       ...existing,
-      glucoseValue: parseFloat(value),
+      glucoseValue: validation.value,
       glucoseUnit: unit,
       testType
     };
@@ -182,8 +198,22 @@ export default function GlucoseEntry() {
                    type="number"
                    placeholder="0"
                    value={value}
-                   onChange={(e) => setValue(e.target.value)}
-                   className="text-4xl h-20 rounded-2xl text-center font-display font-bold"
+                   onChange={(e) => {
+                     setValue(e.target.value);
+                     if (e.target.value) {
+                       const validation = validateGlucose(e.target.value, unit);
+                       if (!validation.isValid) {
+                         setValidationError(validation.error || '');
+                       } else {
+                         setValidationError('');
+                       }
+                     }
+                   }}
+                   className={`text-4xl h-20 rounded-2xl text-center font-display font-bold ${
+                     validationError ? 'border-red-500 border-2' : ''
+                   }`}
+                   min="0"
+                   step="0.1"
                  />
                  <button
                    onClick={() => setUnit(unit === 'mg/dL' ? 'mmol/L' : 'mg/dL')}
@@ -193,6 +223,12 @@ export default function GlucoseEntry() {
                    {unit}
                  </button>
                </div>
+               {validationError && (
+                 <div className="flex items-center gap-2 p-3 bg-red-50 border border-red-200 rounded-lg">
+                   <AlertCircle className="w-4 h-4 text-red-600 flex-shrink-0" />
+                   <p className="text-sm text-red-600">{validationError}</p>
+                 </div>
+               )}
             </div>
           </motion.div>
         ) : (
@@ -250,7 +286,7 @@ export default function GlucoseEntry() {
             size="lg" 
             className="w-full text-lg h-14 shadow-lg shadow-blue-500/20" 
             onClick={handleNext}
-            disabled={!value}
+            disabled={!value || !!validationError}
           >
             See Results
           </Button>
