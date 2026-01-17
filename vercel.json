@@ -10,7 +10,7 @@
     }
   },
   "env": {
-    "VITE_GEMINI_API_KEY": "@gemini_api_key",
+    "VITE_GEMINIKEY": "@gemini_api_key",
     "DATABASE_URL": "@database_url"
   },
   "rewrites": [
