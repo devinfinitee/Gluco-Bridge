@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Camera, RefreshCcw, Loader2, AlertCircle, AlertTriangle } from "lucide-react";
 import { CameraCapture } from "@/components/common/CameraCapture";
-import { callGeminiAPI } from "@/lib/geminiAPI";
+import { useAnalyzeImage } from "@/hooks/use-ai";
 import { motion } from "framer-motion";
 import { useToast } from "@/hooks/use-toast";
 import { validateGlucose } from "@/utils/validation";
@@ -21,6 +21,7 @@ export default function GlucoseEntry() {
   const [validationWarning, setValidationWarning] = useState<string>('');
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
+  const analyzeImageMutation = useAnalyzeImage();
 
   const handleNext = () => {
     // Validate glucose input
@@ -52,98 +53,53 @@ export default function GlucoseEntry() {
   const handleCameraCapture = async (imageData: string) => {
     setIsProcessing(true);
     try {
-      console.log('Analyzing glucometer with Gemini...');
+      console.log('Analyzing glucometer with serverless API...');
       
-      const geminiPrompt = `Analyze this glucometer display image and extract the glucose value. Return ONLY the number and unit in this exact format: "VALUE UNIT" (e.g., "120 mg/dL" or "6.7 mmol/L"). If you cannot read the value clearly, respond with "CANNOT_READ".`;
+      const result = await analyzeImageMutation.mutateAsync({ image: imageData });
       
-      const geminiResponse = await callGeminiAPI(geminiPrompt, imageData);
-      
-      if (geminiResponse && !geminiResponse.includes('CANNOT_READ') && !geminiResponse.includes('UNREADABLE')) {
-        // Try multiple parsing patterns for better compatibility
-        let glucoseValue: number | null = null;
-        let glucoseUnit: 'mg/dL' | 'mmol/L' = 'mg/dL';
+      if (result.value !== null && result.unit !== null) {
+        const glucoseValue = result.value;
+        const glucoseUnit = result.unit as 'mg/dL' | 'mmol/L';
         
-        // Clean response - remove common artifacts
-        const cleanResponse = geminiResponse.trim()
-          .replace(/[\[\]"'`]/g, '') // Remove brackets, quotes
-          .replace(/\s+/g, ' '); // Normalize whitespace
+        // Validate the extracted value
+        const validation = validateGlucose(glucoseValue, glucoseUnit);
         
-        // Pattern 1: Standard format "VALUE UNIT" (e.g., "107 mg/dL" or "5.6 mmol/L")
-        const standardMatch = cleanResponse.match(/(\d+(?:\.\d+)?)\s*(mg\/dL|mmol\/L|mg\/dl|MMOL\/L|MG\/DL)/i);
-        if (standardMatch) {
-          glucoseValue = parseFloat(standardMatch[1]);
-          const unitLower = standardMatch[2].toLowerCase();
-          glucoseUnit = unitLower === 'mg/dl' ? 'mg/dL' : 'mmol/L';
-        } 
-        // Pattern 2: Alternative formats like "107mg/dL" (no space)
-        else {
-          const compactMatch = cleanResponse.match(/(\d+(?:\.\d+)?)(mg\/dL|mmol\/L|mg\/dl|MMOL\/L|MG\/DL)/i);
-          if (compactMatch) {
-            glucoseValue = parseFloat(compactMatch[1]);
-            const unitLower = compactMatch[2].toLowerCase();
-            glucoseUnit = unitLower === 'mg/dl' ? 'mg/dL' : 'mmol/L';
-          }
-          // Pattern 3: Just a number - intelligent unit detection
-          else {
-            const numberMatch = cleanResponse.match(/(\d+(?:\.\d+)?)/);
-            if (numberMatch) {
-              const value = parseFloat(numberMatch[1]);
-              // Smart detection based on typical ranges:
-              // mmol/L: 0.6-44.4 (typically 2-20)
-              // mg/dL: 10-800 (typically 40-400)
-              // Threshold: values below 25 are likely mmol/L
-              if (value < 25) {
-                glucoseValue = value;
-                glucoseUnit = 'mmol/L';
-              } else {
-                glucoseValue = value;
-                glucoseUnit = 'mg/dL';
-              }
-            }
-          }
-        }
-        
-        if (glucoseValue !== null) {
-          // Validate the extracted value
-          const validation = validateGlucose(glucoseValue, glucoseUnit);
+        if (validation.isValid) {
+          setValue(glucoseValue.toString());
+          setUnit(glucoseUnit);
+          setShowCamera(false);
+          setMode('manual');
           
-          if (validation.isValid) {
-            setValue(glucoseValue.toString());
-            setUnit(glucoseUnit);
-            setShowCamera(false);
-            setMode('manual');
-            
-            // Show success with warning if present
-            if (validation.warning) {
-              toast({
-                title: "Reading Detected",
-                description: `${glucoseValue} ${glucoseUnit} - ${validation.warning}`,
-                variant: "destructive",
-              });
-            } else {
-              toast({
-                title: "Success!",
-                description: `Detected glucose value: ${glucoseValue} ${glucoseUnit}`,
-              });
-            }
-            return;
-          } else {
-            // Value parsed but validation failed - let user know
+          // Show success with warning if present
+          if (validation.warning) {
             toast({
-              title: "Invalid Reading",
-              description: `Detected ${glucoseValue} ${glucoseUnit}, but ${validation.error}. Please verify and enter manually.`,
+              title: "Reading Detected",
+              description: `${glucoseValue} ${glucoseUnit} - ${validation.warning}`,
               variant: "destructive",
             });
-            setValue(glucoseValue.toString());
-            setUnit(glucoseUnit);
-            setShowCamera(false);
-            setMode('manual');
-            return;
+          } else {
+            toast({
+              title: "Success!",
+              description: `Detected glucose value: ${glucoseValue} ${glucoseUnit}`,
+            });
           }
+          return;
+        } else {
+          // Value parsed but validation failed - let user know
+          toast({
+            title: "Invalid Reading",
+            description: `Detected ${glucoseValue} ${glucoseUnit}, but ${validation.error}. Please verify and enter manually.`,
+            variant: "destructive",
+          });
+          setValue(glucoseValue.toString());
+          setUnit(glucoseUnit);
+          setShowCamera(false);
+          setMode('manual');
+          return;
         }
       }
       
-      // Gemini couldn't read the image or parsing failed
+      // API couldn't read the image
       toast({
         title: "Detection failed",
         description: "Could not read the glucometer screen. Please enter manually.",

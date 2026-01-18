@@ -2,11 +2,11 @@ import { useEffect, useState, useRef } from "react";
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { interpretGlucose, type RiskLevel } from "@/utils/glucoseRules";
-import { useChat } from "@/hooks/use-ai";
+import { useChat, useAnalyzeImage } from "@/hooks/use-ai";
 import { useCreateScreening } from "@/hooks/use-screenings";
 import { Activity, MessageCircle, Send, ArrowRight, Info, MapPin, Camera, Upload, Loader2, Lightbulb } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import { generateSuggestedQuestions, callGeminiAPI } from "@/lib/geminiAPI";
+import { generateSuggestedQuestions } from "@/lib/geminiAPI";
 import { CameraCapture } from "@/components/common/CameraCapture";
 import { useToast } from "@/hooks/use-toast";
 import { calculateBMI } from "@/utils/validation";
@@ -23,6 +23,7 @@ export default function Results() {
   const { toast } = useToast();
   
   const chatMutation = useChat();
+  const analyzeImageMutation = useAnalyzeImage();
   const saveMutation = useCreateScreening();
 
   useEffect(() => {
@@ -85,46 +86,40 @@ export default function Results() {
 
   const handleCameraCapture = async (imageData: string) => {
     setIsProcessing(true);
-    try {
-      console.log('Analyzing glucometer with Gemini...');
+    try {serverless API...');
       
-      const geminiPrompt = `Analyze this glucometer display image and extract the glucose value. Return ONLY the number and unit in this exact format: "VALUE UNIT" (e.g., "120 mg/dL" or "6.7 mmol/L"). If you cannot read the value clearly, respond with "CANNOT_READ".`;
+      const result = await analyzeImageMutation.mutateAsync({ image: imageData });
       
-      const geminiResponse = await callGeminiAPI(geminiPrompt, imageData);
-      
-      if (geminiResponse && !geminiResponse.includes('CANNOT_READ')) {
-        // Parse the Gemini response
-        const match = geminiResponse.trim().match(/(\d+(?:\.\d+)?)\s*(mg\/dL|mmol\/L)/i);
-        if (match) {
-          const glucoseValue = parseFloat(match[1]);
-          const glucoseUnit = match[2].toUpperCase() as 'mg/dL' | 'mmol/L';
-          
-          const updatedData = {
-            ...data,
-            glucoseValue: glucoseValue,
-            glucoseUnit: glucoseUnit
-          };
-          localStorage.setItem('screeningData', JSON.stringify(updatedData));
-          setData(updatedData);
-          setShowCamera(false);
-          
-          // Regenerate suggested questions
-          const interpretation = interpretGlucose(glucoseValue, glucoseUnit);
-          const questions = generateSuggestedQuestions(
-            glucoseValue,
-            data.testType,
-            interpretation.level
-          );
-          setSuggestedQuestions(questions);
-          
-          toast({
-            title: "Success!",
-            description: `Updated glucose value: ${glucoseValue} ${glucoseUnit}`,
-          });
-          return;
-        }
+      if (result.value !== null && result.unit !== null) {
+        const glucoseValue = result.value;
+        const glucoseUnit = result.unit.toUpperCase() as 'mg/dL' | 'mmol/L';
+        
+        const updatedData = {
+          ...data,
+          glucoseValue: glucoseValue,
+          glucoseUnit: glucoseUnit
+        };
+        localStorage.setItem('screeningData', JSON.stringify(updatedData));
+        setData(updatedData);
+        setShowCamera(false);
+        
+        // Regenerate suggested questions
+        const interpretation = interpretGlucose(glucoseValue, glucoseUnit);
+        const questions = generateSuggestedQuestions(
+          glucoseValue,
+          data.testType,
+          interpretation.level
+        );
+        setSuggestedQuestions(questions);
+        
+        toast({
+          title: "Success!",
+          description: `Updated glucose value: ${glucoseValue} ${glucoseUnit}`,
+        });
+        return;
       }
       
+      // API
       // Gemini couldn't read the image
       toast({
         title: "Detection failed",
