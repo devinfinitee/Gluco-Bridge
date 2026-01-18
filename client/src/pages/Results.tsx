@@ -86,7 +86,8 @@ export default function Results() {
 
   const handleCameraCapture = async (imageData: string) => {
     setIsProcessing(true);
-    try {serverless API...');
+    try {
+      console.log('Analyzing glucometer with serverless API...');
       
       const result = await analyzeImageMutation.mutateAsync({ image: imageData });
       
