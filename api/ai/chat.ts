@@ -97,7 +97,7 @@ export default async function handler(
     }
 
     const genAI = new GoogleGenerativeAI(apiKey);
-    const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash-exp' });
+    const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
 
     // Build system prompt with context
     let systemPrompt = `You are a helpful health information assistant specializing in diabetes management and glucose monitoring.
