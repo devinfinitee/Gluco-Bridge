@@ -1,5 +1,5 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { GoogleGenerativeAI } from '@google/generative-ai';
+import { GoogleGenAI } from '@google/genai';
 import { z } from 'zod';
 
 // Inline schema validation
@@ -110,6 +110,16 @@ export default async function handler(
 
     const { image } = validationResult.data;
 
+    // Validate image data
+    if (!image || image.length < 100) {
+      return res.status(400).json({ 
+        message: 'Invalid or empty image data' 
+      });
+    }
+
+    console.log('Image data length:', image.length);
+    console.log('Image starts with:', image.substring(0, 100));
+
     // Initialize Gemini API
     const apiKey = process.env.GEMINI_API_KEY;
     
@@ -120,10 +130,17 @@ export default async function handler(
       });
     }
 
-    console.log('Initializing Gemini with API key length:', apiKey.length);
+    // Validate API key format (should be long alphanumeric string)
+    if (apiKey.length < 30) {
+      console.error('API key appears to be invalid (too short)');
+      return res.status(500).json({ 
+        message: 'Invalid API key configuration.' 
+      });
+    }
+
+    console.log('API key configured:', `${apiKey.substring(0, 10)}...${apiKey.substring(apiKey.length - 10)}`);
     
-    const genAI = new GoogleGenerativeAI(apiKey);
-    const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
+    const ai = new GoogleGenAI({ apiKey });
 
     const systemPrompt = `You are a medical imaging specialist expert in reading glucose monitoring devices.
 Your task is to accurately extract the blood glucose reading from the provided image.
@@ -142,30 +159,47 @@ Instructions:
 
     // Clean base64 data
     const cleanBase64 = image.includes(',') ? image.split(',')[1] : image;
+    
+    console.log('Clean base64 length:', cleanBase64.length);
 
     // Generate response from Gemini
-    const result = await model.generateContent([
-      { text: systemPrompt + '\n\n' + userPrompt },
-      {
-        inlineData: {
-          data: cleanBase64.trim().replace(/\s/g, ''),
-          mimeType: 'image/jpeg',
-        },
-      },
-    ]);
+    try {
+      console.log('Sending request to Gemini API...');
+      
+      const result = await ai.models.generateContent({
+        model: 'models/gemini-2.5-flash',
+        contents: [
+          {
+            role: 'user',
+            parts: [
+              { text: systemPrompt + '\n\n' + userPrompt },
+              {
+                inlineData: {
+                  mimeType: 'image/jpeg',
+                  data: cleanBase64.trim().replace(/\s/g, ''),
+                },
+              },
+            ],
+          },
+        ],
+      });
 
-    const responseText = result.response.text().trim();
+      const responseText = result.text().trim();
 
-    if (!responseText) {
-      throw new Error('Empty response from AI model');
+      if (!responseText) {
+        throw new Error('Empty response from AI model');
+      }
+
+      console.log('Gemini response:', responseText);
+      
+      // Parse the glucose value from response
+      const glucoseData = parseGlucoseValue(responseText);
+
+      return res.status(200).json(glucoseData);
+    } catch (apiError) {
+      console.error('Gemini API call failed:', apiError);
+      throw apiError;
     }
-
-    console.log('Gemini response:', responseText);
-    
-    // Parse the glucose value from response
-    const glucoseData = parseGlucoseValue(responseText);
-
-    return res.status(200).json(glucoseData);
 
   } catch (error) {
     console.error('Image analysis API error:', error);
@@ -174,28 +208,40 @@ Instructions:
     console.error('Full error details:', {
       message: errorMsg,
       type: error instanceof Error ? error.constructor.name : typeof error,
-      stack: error instanceof Error ? error.stack : 'no stack'
+      stack: error instanceof Error ? error.stack : 'no stack',
+      errorObj: error
     });
     
     if (error instanceof Error) {
       const msg = error.message.toLowerCase();
       
-      if (msg.includes('api_key') || msg.includes('unauthenticated') || msg.includes('invalid')) {
+      // Check for API key issues
+      if (msg.includes('api_key') || msg.includes('unauthenticated') || msg.includes('unauthorized') || msg.includes('invalid api key')) {
         console.error('API Key error detected');
         return res.status(500).json({ 
-          message: 'API configuration error. Verify your API key is valid.' 
+          message: 'API configuration error. Verify your API key is valid and has the required permissions.' 
         });
       }
       
-      if (msg.includes('429') || msg.includes('quota') || msg.includes('resource_exhausted')) {
+      // Check for quota/rate limit issues
+      if (msg.includes('429') || msg.includes('quota') || msg.includes('resource_exhausted') || msg.includes('quota exceeded')) {
         return res.status(429).json({ 
-          message: 'Rate limit exceeded. Please try again in a moment.' 
+          message: 'API quota exceeded. Please try again later.' 
         });
       }
       
-      if (msg.includes('invalid') || msg.includes('bad request')) {
+      // Check for invalid request issues
+      if (msg.includes('invalid') || msg.includes('bad request') || msg.includes('malformed')) {
         return res.status(400).json({ 
-          message: 'Invalid image data. Please try again with a clear photo.' 
+          message: 'Invalid image data or request format.' 
+        });
+      }
+
+      // Check for network/connection issues
+      if (msg.includes('econnrefused') || msg.includes('enotfound') || msg.includes('timeout') || msg.includes('fetch')) {
+        console.error('Network error connecting to Google API');
+        return res.status(503).json({ 
+          message: 'Unable to connect to AI service. Please try again later.' 
         });
       }
     }

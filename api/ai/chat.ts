@@ -1,5 +1,5 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { GoogleGenerativeAI } from '@google/generative-ai';
+import { GoogleGenAI } from '@google/genai';
 import { z } from 'zod';
 
 // Inline schema validation
@@ -107,8 +107,7 @@ export default async function handler(
 
     console.log('Initializing Gemini with API key length:', apiKey.length);
     
-    const genAI = new GoogleGenerativeAI(apiKey);
-    const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
+    const ai = new GoogleGenAI({ apiKey });
 
     // Build system prompt with context
     let systemPrompt = `You are a helpful health information assistant specializing in diabetes management and glucose monitoring.
@@ -128,12 +127,20 @@ export default async function handler(
     }
 
     // Generate response
-    const result = await model.generateContent([
-      { text: systemPrompt },
-      { text: message },
-    ]);
+    const result = await ai.models.generateContent({
+      model: 'models/gemini-2.5-flash',
+      contents: [
+        {
+          role: 'user',
+          parts: [
+            { text: systemPrompt },
+            { text: message },
+          ],
+        },
+      ],
+    });
 
-    const response = result.response.text().trim();
+    const response = result.text().trim();
 
     if (!response) {
       throw new Error('Empty response from AI model');
