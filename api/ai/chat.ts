@@ -140,7 +140,7 @@ export default async function handler(
       ],
     });
 
-    const response = result.text().trim();
+    const response = result.text.trim();
 
     if (!response) {
       throw new Error('Empty response from AI model');

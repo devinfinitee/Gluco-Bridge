@@ -184,7 +184,7 @@ Instructions:
         ],
       });
 
-      const responseText = result.text().trim();
+      const responseText = result.text.trim();
 
       if (!responseText) {
         throw new Error('Empty response from AI model');
