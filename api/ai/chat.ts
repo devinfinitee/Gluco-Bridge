@@ -1,6 +1,15 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { GoogleGenerativeAI } from '@google/generative-ai';
-import { chatSchema } from '../../shared/schema';
+import { z } from 'zod';
+
+// Inline schema validation
+const chatSchema = z.object({
+  message: z.string(),
+  context: z.object({
+    glucoseValue: z.number().optional(),
+    screeningId: z.number().optional(),
+  }).optional(),
+});
 
 // Rate limiting storage (in-memory for serverless)
 const rateLimitStore = new Map<string, { count: number; resetTime: number }>();
@@ -89,13 +98,15 @@ export default async function handler(
 
     // Initialize Gemini API
     const apiKey = process.env.GEMINI_API_KEY;
-    if (!apiKey) {
+    if (!apiKey || apiKey.trim() === '') {
       console.error('GEMINI_API_KEY not configured');
       return res.status(500).json({ 
         message: 'API configuration error. Please contact support.' 
       });
     }
 
+    console.log('Initializing Gemini with API key length:', apiKey.length);
+    
     const genAI = new GoogleGenerativeAI(apiKey);
     const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
 
@@ -128,21 +139,31 @@ export default async function handler(
       throw new Error('Empty response from AI model');
     }
 
+    console.log('Chat response generated successfully');
+    
     return res.status(200).json({ response });
 
   } catch (error) {
     console.error('Chat API error:', error);
     
+    const errorMsg = error instanceof Error ? error.message : JSON.stringify(error);
+    console.error('Full error details:', {
+      message: errorMsg,
+      type: error instanceof Error ? error.constructor.name : typeof error,
+      stack: error instanceof Error ? error.stack : 'no stack'
+    });
+    
     if (error instanceof Error) {
-      const errorMsg = error.message.toLowerCase();
+      const msg = error.message.toLowerCase();
       
-      if (errorMsg.includes('api_key') || errorMsg.includes('unauthenticated')) {
+      if (msg.includes('api_key') || msg.includes('unauthenticated') || msg.includes('invalid')) {
+        console.error('API Key error detected');
         return res.status(500).json({ 
-          message: 'API configuration error. Please contact support.' 
+          message: 'API configuration error. Verify your API key is valid.' 
         });
       }
       
-      if (errorMsg.includes('429') || errorMsg.includes('quota')) {
+      if (msg.includes('429') || msg.includes('quota') || msg.includes('resource_exhausted')) {
         return res.status(429).json({ 
           message: 'Service temporarily busy. Please try again in a moment.' 
         });

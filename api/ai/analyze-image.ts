@@ -1,6 +1,11 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { GoogleGenerativeAI } from '@google/generative-ai';
-import { analyzeImageSchema } from '../../shared/schema';
+import { z } from 'zod';
+
+// Inline schema validation
+const analyzeImageSchema = z.object({
+  image: z.string(),
+});
 
 // Rate limiting storage (in-memory for serverless)
 const rateLimitStore = new Map<string, { count: number; resetTime: number }>();
@@ -107,13 +112,16 @@ export default async function handler(
 
     // Initialize Gemini API
     const apiKey = process.env.GEMINI_API_KEY;
-    if (!apiKey) {
+    
+    if (!apiKey || apiKey.trim() === '') {
       console.error('GEMINI_API_KEY not configured');
       return res.status(500).json({ 
         message: 'API configuration error. Please contact support.' 
       });
     }
 
+    console.log('Initializing Gemini with API key length:', apiKey.length);
+    
     const genAI = new GoogleGenerativeAI(apiKey);
     const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
 
@@ -152,6 +160,8 @@ Instructions:
       throw new Error('Empty response from AI model');
     }
 
+    console.log('Gemini response:', responseText);
+    
     // Parse the glucose value from response
     const glucoseData = parseGlucoseValue(responseText);
 
@@ -160,22 +170,30 @@ Instructions:
   } catch (error) {
     console.error('Image analysis API error:', error);
     
+    const errorMsg = error instanceof Error ? error.message : JSON.stringify(error);
+    console.error('Full error details:', {
+      message: errorMsg,
+      type: error instanceof Error ? error.constructor.name : typeof error,
+      stack: error instanceof Error ? error.stack : 'no stack'
+    });
+    
     if (error instanceof Error) {
-      const errorMsg = error.message.toLowerCase();
+      const msg = error.message.toLowerCase();
       
-      if (errorMsg.includes('api_key') || errorMsg.includes('unauthenticated')) {
+      if (msg.includes('api_key') || msg.includes('unauthenticated') || msg.includes('invalid')) {
+        console.error('API Key error detected');
         return res.status(500).json({ 
-          message: 'API configuration error. Please contact support.' 
+          message: 'API configuration error. Verify your API key is valid.' 
         });
       }
       
-      if (errorMsg.includes('429') || errorMsg.includes('quota')) {
+      if (msg.includes('429') || msg.includes('quota') || msg.includes('resource_exhausted')) {
         return res.status(429).json({ 
           message: 'Rate limit exceeded. Please try again in a moment.' 
         });
       }
       
-      if (errorMsg.includes('invalid') || errorMsg.includes('bad request')) {
+      if (msg.includes('invalid') || msg.includes('bad request')) {
         return res.status(400).json({ 
           message: 'Invalid image data. Please try again with a clear photo.' 
         });
