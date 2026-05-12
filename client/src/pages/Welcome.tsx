@@ -1,133 +1,243 @@
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
-import { ArrowRight, ShieldCheck, HeartPulse, BrainCircuit, Heart } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import { motion } from "framer-motion";
 
 export default function Welcome() {
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center p-6 bg-gradient-to-b from-background to-blue-50/50">
-      
-      {/* Hero Content */}
-      <div className="w-full max-w-md space-y-8 text-center">
-        <motion.div 
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
-          className="relative inline-block"
-        >
-          <div className="absolute inset-0 bg-primary/20 blur-3xl rounded-full" />
-          <HeartPulse className="w-24 h-24 text-primary relative z-10 mx-auto animate-float" />
-        </motion.div>
+    <main className="max-w-[900px] mx-auto px-4 md:px-8 pt-16 pb-32">
+      <div className="grid lg:grid-cols-2 gap-12 items-center">
+        {/* Left Column: Hero Content */}
+        <div className="flex flex-col gap-8">
+          <div className="space-y-4">
+            {/* Badge */}
+            <motion.span 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.6 }}
+              className="inline-block px-3 py-1 rounded-full bg-secondary-container text-on-secondary-fixed-variant font-label-caps text-[10px] tracking-widest uppercase"
+            >
+              Precision Health Monitoring
+            </motion.span>
 
-        <motion.div 
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.2 }}
-          className="space-y-6"
-        >
-          <div className="space-y-2">
-            <h1 className="text-4xl md:text-5xl font-bold tracking-tight text-foreground">
-              Take Control of Your <br/>
-              <span className="text-primary">Health Today</span>
-            </h1>
-            <p className="text-sm font-semibold text-primary/80 uppercase tracking-widest">
-              Preventing Diabetes Before It's Too Late
-            </p>
+            {/* Headline */}
+            <motion.h1 
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.1 }}
+              className="font-display-xl text-display-xl text-on-surface"
+            >
+              Take Control of Your Health Today
+            </motion.h1>
+
+            {/* Description */}
+            <motion.p 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.6, delay: 0.2 }}
+              className="font-body-base text-body-base text-on-surface-variant max-w-md"
+            >
+              Bridge the gap between data and action. Our AI-powered screening provides real-time insights into your glucose levels, risk factors, and metabolic health.
+            </motion.p>
           </div>
 
-          <div className="space-y-4 text-left">
-            <div className="bg-red-50 border-l-4 border-red-500 p-4 rounded-r-lg">
-              <p className="text-sm font-semibold text-red-900 mb-2">🌍 The Global Crisis</p>
-              <p className="text-sm text-red-800">Over 400 million people worldwide have diabetes, with 90% living in low-to-middle income countries where healthcare access is limited. In Nigeria, diagnosis rates remain critically low.</p>
-            </div>
+          {/* CTA Buttons */}
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.6, delay: 0.3 }}
+            className="flex flex-col sm:flex-row gap-4"
+          >
+            <Link href="/screening">
+              <Button 
+                className="bg-primary text-on-primary font-label-caps text-label-caps px-8 py-4 rounded-xl shadow-lg hover:-translate-y-0.5 active:scale-95 transition-all flex items-center justify-center gap-2"
+              >
+                Get Started
+                <ArrowRight className="w-4 h-4" />
+              </Button>
+            </Link>
+            <Link href="/bmi">
+              <Button 
+                variant="outline"
+                className="border border-outline text-primary font-label-caps text-label-caps px-8 py-4 rounded-xl hover:bg-surface-container transition-all flex items-center justify-center"
+              >
+                Calculate BMI
+              </Button>
+            </Link>
+          </motion.div>
 
-            <div className="bg-orange-50 border-l-4 border-orange-500 p-4 rounded-r-lg">
-              <p className="text-sm font-semibold text-orange-900 mb-2">⚠️ The Silent Problem</p>
-              <p className="text-sm text-orange-800">Early-stage diabetes has NO symptoms. Many people don't know they have it until serious complications develop—kidney damage, vision loss, heart disease, and amputations.</p>
+          {/* Trust Metrics */}
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.6, delay: 0.4 }}
+            className="flex items-center gap-4 py-4 border-t border-outline-variant/30"
+          >
+            <div className="flex -space-x-3">
+              <div className="w-8 h-8 rounded-full border-2 border-background bg-surface-container overflow-hidden">
+                <div className="w-full h-full bg-gradient-to-br from-primary/30 to-secondary/30"></div>
+              </div>
+              <div className="w-8 h-8 rounded-full border-2 border-background bg-surface-container overflow-hidden">
+                <div className="w-full h-full bg-gradient-to-br from-secondary/30 to-primary/30"></div>
+              </div>
+              <div className="w-8 h-8 rounded-full border-2 border-background bg-surface-container-high flex items-center justify-center text-[10px] font-bold text-primary">
+                +2k
+              </div>
             </div>
+            <p className="font-body-sm text-body-sm text-on-surface-variant">Trusted by thousands managing diabetes.</p>
+          </motion.div>
+        </div>
 
-            <div className="bg-blue-50 border-l-4 border-blue-500 p-4 rounded-r-lg">
-              <p className="text-sm font-semibold text-blue-900 mb-2">💡 The Solution</p>
-              <p className="text-sm text-blue-800">Gluco-Bridge uses AI-powered screening and instant glucose monitoring to catch diabetes early, when it's most treatable. Knowledge is prevention.</p>
-            </div>
-          </div>
-        </motion.div>
-
-        {/* Feature Grid */}
+        {/* Right Column: Bento Grid (Desktop Only) */}
         <motion.div 
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.6, delay: 0.5 }}
-          className="grid grid-cols-2 gap-4"
+          className="relative hidden lg:block"
         >
-          <div className="p-4 bg-gradient-to-br from-blue-50 to-blue-100 rounded-2xl border border-blue-200 flex flex-col items-center gap-2">
-            <ShieldCheck className="w-8 h-8 text-blue-600" />
-            <span className="font-semibold text-sm text-blue-900">Early Detection</span>
-            <span className="text-xs text-blue-700">Catch it early</span>
-          </div>
-          <div className="p-4 bg-gradient-to-br from-indigo-50 to-indigo-100 rounded-2xl border border-indigo-200 flex flex-col items-center gap-2">
-            <BrainCircuit className="w-8 h-8 text-indigo-600" />
-            <span className="font-semibold text-sm text-indigo-900">AI Insights</span>
-            <span className="text-xs text-indigo-700">Personalized guidance</span>
-          </div>
-        </motion.div>
-
-        {/* Impact Stats */}
-        <motion.div 
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.6 }}
-          className="grid grid-cols-3 gap-3 text-center"
-        >
-          <div className="bg-white p-3 rounded-xl border border-slate-100">
-            <p className="text-2xl font-bold text-primary">400M</p>
-            <p className="text-xs text-muted-foreground">People affected</p>
-          </div>
-          <div className="bg-white p-3 rounded-xl border border-slate-100">
-            <p className="text-2xl font-bold text-primary">90%</p>
-            <p className="text-xs text-muted-foreground">Undiagnosed in low-income</p>
-          </div>
-          <div className="bg-white p-3 rounded-xl border border-slate-100">
-            <p className="text-2xl font-bold text-primary">80%</p>
-            <p className="text-xs text-muted-foreground">Preventable with early action</p>
-          </div>
-        </motion.div>
-
-        <motion.div 
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.8 }}
-          className="pt-6 space-y-4"
-        >
-          <div className="bg-gradient-to-r from-primary/10 to-primary/5 border border-primary/20 rounded-2xl p-4">
-            <p className="text-sm font-semibold text-primary mb-1">⚡ Your potential for change</p>
-            <p className="text-xs text-slate-600">Early detection and lifestyle changes can prevent or delay diabetes by up to 80%. It all starts with one step.</p>
+          {/* Floating Heart Icon */}
+          <div className="absolute -top-12 left-1/2 -translate-x-1/2 z-20">
+            <div className="w-20 h-20 bg-white rounded-2xl shadow-lg flex items-center justify-center transition-transform hover:scale-110">
+              <span className="text-4xl">❤️</span>
+            </div>
           </div>
 
-          <Link href="/screening">
-            <Button size="lg" className="w-full text-lg shadow-blue-500/25 font-semibold">
-              Start Your Health Journey <ArrowRight className="ml-2 w-5 h-5" />
-            </Button>
-          </Link>
+          {/* 2x2 Bento Grid */}
+          <div className="grid grid-cols-2 gap-4 pt-12">
+            {/* High Risk Alert Card */}
+            <motion.div 
+              whileHover={{ scale: 1.02 }}
+              className="glass-card p-5 rounded-2xl health-shadow flex flex-col gap-2 transition-all hover:bg-white"
+            >
+              <div className="flex items-center justify-between">
+                <span className="text-error text-xl">⚠️</span>
+                <span className="text-[10px] font-bold text-error bg-error-container px-2 py-0.5 rounded-full uppercase">High Risk</span>
+              </div>
+              <p className="font-body-sm text-on-surface-variant text-[12px] leading-tight mt-2">
+                HbA1c levels showing upward trend over 30 days.
+              </p>
+            </motion.div>
 
-          <Link href="/bmi">
-            <Button variant="outline" size="lg" className="w-full text-base">
-              Calculate Your BMI
-            </Button>
-          </Link>
-          
-          <Link href="/health-tips">
-            <Button variant="outline" size="lg" className="w-full text-base">
-              <Heart className="mr-2 w-5 h-5" />
-              Learn Prevention Tips
-            </Button>
-          </Link>
-          
-          <p className="mt-4 text-xs text-muted-foreground text-center">
-            ✓ Free screening • ✓ Instant insights • ✓ AI guidance • ✓ No sign-up required
-          </p>
+            {/* Avg Glucose Card */}
+            <motion.div 
+              whileHover={{ scale: 1.02 }}
+              className="glass-card p-5 rounded-2xl health-shadow flex flex-col justify-between bg-primary/5 transition-all hover:bg-white"
+            >
+              <div className="flex items-center gap-2">
+                <span className="text-primary text-sm">🩸</span>
+                <span className="font-label-caps text-[10px] text-on-surface-variant">Avg Glucose</span>
+              </div>
+              <div className="mt-4">
+                <span className="text-3xl font-bold text-primary">104</span>
+                <span className="text-xs text-on-surface-variant ml-1">mg/dL</span>
+              </div>
+            </motion.div>
+
+            {/* Activity Card */}
+            <motion.div 
+              whileHover={{ scale: 1.02 }}
+              className="glass-card p-5 rounded-2xl health-shadow flex flex-col justify-between transition-all hover:bg-white"
+            >
+              <div className="flex items-center gap-2">
+                <span className="text-secondary text-sm">🏃</span>
+                <span className="font-label-caps text-[10px] text-on-surface-variant">Activity</span>
+              </div>
+              <div className="mt-4">
+                <span className="text-3xl font-bold text-on-surface">8.4k</span>
+                <span className="text-xs text-on-surface-variant ml-1">steps</span>
+              </div>
+            </motion.div>
+
+            {/* Caution Card */}
+            <motion.div 
+              whileHover={{ scale: 1.02 }}
+              className="glass-card p-5 rounded-2xl health-shadow flex flex-col gap-2 bg-surface-container-high/40 transition-all hover:bg-white border-dashed border-2"
+            >
+              <div className="flex items-center justify-between">
+                <span className="text-on-secondary-fixed-variant text-xl">ℹ️</span>
+                <span className="text-[10px] font-bold text-on-secondary-fixed-variant bg-secondary-container px-2 py-0.5 rounded-full uppercase">Caution</span>
+              </div>
+              <p className="font-body-sm text-on-surface-variant text-[12px] leading-tight mt-2">
+                Irregular sleep patterns detected yesterday.
+              </p>
+            </motion.div>
+          </div>
+
+          {/* Background Decoration */}
+          <div className="absolute -z-10 top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[120%] h-[120%] bg-gradient-to-tr from-primary/5 to-transparent rounded-full blur-3xl"></div>
         </motion.div>
       </div>
-    </div>
+
+      {/* Mobile Alert Cards (Visible only on mobile) */}
+      <div className="lg:hidden mt-8 space-y-4">
+        <h3 className="font-label-caps text-label-caps text-on-surface-variant px-1">SYSTEM STATUS</h3>
+        
+        {/* High Risk Alert */}
+        <motion.div 
+          initial={{ opacity: 0, x: -20 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ delay: 0.6 }}
+          className="bg-error-container border-l-4 border-error p-4 rounded-xl flex items-start gap-4 shadow-[0px_4px_20px_rgba(186,26,26,0.1)]"
+        >
+          <span className="text-error text-xl">⚠️</span>
+          <div className="flex flex-col">
+            <span className="font-title-md text-on-error-container text-[16px]">High Risk</span>
+            <span className="text-body-sm text-on-error-container/80">Glucose levels exceeded threshold (180 mg/dL).</span>
+          </div>
+        </motion.div>
+
+        {/* Caution Alert */}
+        <motion.div 
+          initial={{ opacity: 0, x: -20 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ delay: 0.7 }}
+          className="bg-[#FFECCF] border-l-4 border-[#8B5000] p-4 rounded-xl flex items-start gap-4 shadow-[0px_4px_20px_rgba(139,80,0,0.05)]"
+        >
+          <span className="text-[#8B5000] text-xl">⚠️</span>
+          <div className="flex flex-col">
+            <span className="font-title-md text-[#2A1700] text-[16px]">Caution</span>
+            <span className="text-body-sm text-[#2A1700]/80">Missed afternoon activity goal.</span>
+          </div>
+        </motion.div>
+
+        {/* Normal Alert */}
+        <motion.div 
+          initial={{ opacity: 0, x: -20 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ delay: 0.8 }}
+          className="bg-primary-container/10 border-l-4 border-primary p-4 rounded-xl flex items-start gap-4 shadow-[0px_4px_20px_rgba(0,92,200,0.05)]"
+        >
+          <span className="text-primary text-xl">✓</span>
+          <div className="flex flex-col">
+            <span className="font-title-md text-primary text-[16px]">Normal</span>
+            <span className="text-body-sm text-on-surface-variant">System sync successful. Data is up to date.</span>
+          </div>
+        </motion.div>
+      </div>
+
+      {/* Mobile Stats Grid */}
+      <motion.div 
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 0.9 }}
+        className="lg:hidden grid grid-cols-3 gap-2 mt-8"
+      >
+        <div className="bg-surface border border-outline-variant/30 p-3 rounded-xl flex flex-col items-center justify-center text-center shadow-sm">
+          <span className="text-label-caps font-label-caps text-on-surface-variant">Avg Glucose</span>
+          <span className="font-title-md text-primary mt-1">112</span>
+          <span className="text-[10px] font-bold text-on-surface-variant">mg/dL</span>
+        </div>
+        <div className="bg-surface border border-outline-variant/30 p-3 rounded-xl flex flex-col items-center justify-center text-center shadow-sm">
+          <span className="text-label-caps font-label-caps text-on-surface-variant">Last Scan</span>
+          <span className="font-title-md text-primary mt-1">2m</span>
+          <span className="text-[10px] font-bold text-on-surface-variant">ago</span>
+        </div>
+        <div className="bg-surface border border-outline-variant/30 p-3 rounded-xl flex flex-col items-center justify-center text-center shadow-sm">
+          <span className="text-label-caps font-label-caps text-on-surface-variant">Activity</span>
+          <span className="font-title-md text-primary mt-1">72%</span>
+          <span className="text-[10px] font-bold text-on-surface-variant">Goal</span>
+        </div>
+      </motion.div>
+    </main>
   );
 }

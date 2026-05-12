@@ -1,8 +1,5 @@
 import { useState, useRef } from "react";
 import { useLocation } from "wouter";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Camera, RefreshCcw, Loader2, AlertCircle, AlertTriangle } from "lucide-react";
 import { CameraCapture } from "@/components/common/CameraCapture";
 import { useAnalyzeImage } from "@/hooks/use-ai";
 import { motion } from "framer-motion";
@@ -11,24 +8,21 @@ import { validateGlucose } from "@/utils/validation";
 
 export default function GlucoseEntry() {
   const [_, setLocation] = useLocation();
-  const [mode, setMode] = useState<'manual' | 'camera'>('manual');
+  const [view, setView] = useState<'manual' | 'camera'>('manual');
   const [value, setValue] = useState('');
   const [unit, setUnit] = useState<'mg/dL' | 'mmol/L'>('mg/dL');
-  const [testType, setTestType] = useState<'fasting' | 'random'>('random');
+  const [timing, setTiming] = useState<'before' | 'after' | 'fasting' | 'bedtime'>('fasting');
+  const [feeling, setFeeling] = useState<'good' | 'neutral' | 'sick'>('neutral');
   const [isProcessing, setIsProcessing] = useState(false);
   const [showCamera, setShowCamera] = useState(false);
-  const [validationError, setValidationError] = useState<string>('');
-  const [validationWarning, setValidationWarning] = useState<string>('');
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
   const analyzeImageMutation = useAnalyzeImage();
 
   const handleNext = () => {
-    // Validate glucose input
     const validation = validateGlucose(value, unit);
     
     if (!validation.isValid) {
-      setValidationError(validation.error || 'Invalid glucose value');
       toast({
         title: "Invalid Input",
         description: validation.error || 'Please enter a valid glucose value',
@@ -37,14 +31,13 @@ export default function GlucoseEntry() {
       return;
     }
 
-    // Clear error and proceed
-    setValidationError('');
     const existing = JSON.parse(localStorage.getItem('screeningData') || '{}');
     const completeData = {
       ...existing,
       glucoseValue: validation.value,
       glucoseUnit: unit,
-      testType
+      timing,
+      feeling,
     };
     localStorage.setItem('screeningData', JSON.stringify(completeData));
     setLocation('/results');
@@ -53,39 +46,26 @@ export default function GlucoseEntry() {
   const handleCameraCapture = async (imageData: string) => {
     setIsProcessing(true);
     try {
-      console.log('Analyzing glucometer with serverless API...');
-      
       const result = await analyzeImageMutation.mutateAsync({ image: imageData });
       
       if (result.value !== null && result.unit !== null) {
         const glucoseValue = result.value;
         const glucoseUnit = result.unit as 'mg/dL' | 'mmol/L';
         
-        // Validate the extracted value
         const validation = validateGlucose(glucoseValue, glucoseUnit);
         
         if (validation.isValid) {
           setValue(glucoseValue.toString());
           setUnit(glucoseUnit);
           setShowCamera(false);
-          setMode('manual');
+          setView('manual');
           
-          // Show success with warning if present
-          if (validation.warning) {
-            toast({
-              title: "Reading Detected",
-              description: `${glucoseValue} ${glucoseUnit} - ${validation.warning}`,
-              variant: "destructive",
-            });
-          } else {
-            toast({
-              title: "Success!",
-              description: `Detected glucose value: ${glucoseValue} ${glucoseUnit}`,
-            });
-          }
+          toast({
+            title: "Success!",
+            description: `Detected glucose value: ${glucoseValue} ${glucoseUnit}`,
+          });
           return;
         } else {
-          // Value parsed but validation failed - let user know
           toast({
             title: "Invalid Reading",
             description: `Detected ${glucoseValue} ${glucoseUnit}, but ${validation.error}. Please verify and enter manually.`,
@@ -94,19 +74,18 @@ export default function GlucoseEntry() {
           setValue(glucoseValue.toString());
           setUnit(glucoseUnit);
           setShowCamera(false);
-          setMode('manual');
+          setView('manual');
           return;
         }
       }
       
-      // API couldn't read the image
       toast({
         title: "Detection failed",
         description: "Could not read the glucometer screen. Please enter manually.",
         variant: "destructive",
       });
       setShowCamera(false);
-      setMode('manual');
+      setView('manual');
       
     } catch (error) {
       console.error("Failed to analyze glucometer:", error);
@@ -117,7 +96,7 @@ export default function GlucoseEntry() {
         variant: "destructive",
       });
       setShowCamera(false);
-      setMode('manual');
+      setView('manual');
     } finally {
       setIsProcessing(false);
     }
@@ -147,181 +126,376 @@ export default function GlucoseEntry() {
     }
   };
 
+  const feelingEmojis = [
+    { id: 'good', emoji: '😊', label: 'Good' },
+    { id: 'neutral', emoji: '😐', label: 'Neutral' },
+    { id: 'sick', emoji: '🤒', label: 'Sick' },
+  ] as const;
+
   return (
-    <div className="min-h-screen bg-slate-50 p-6 flex flex-col max-w-md mx-auto">
-      {showCamera && (
-        <CameraCapture 
-          onCapture={handleCameraCapture}
-          isProcessing={isProcessing}
-        />
-      )}
+    <main className="md:min-h-screen md:bg-background h-screen bg-background flex md:flex-col flex-col overflow-hidden md:overflow-visible">
+      {showCamera && <CameraCapture onCapture={handleCameraCapture} isProcessing={isProcessing} />}
 
-      <h1 className="text-3xl font-bold mb-2 mt-8">Glucose Entry</h1>
-      <p className="text-muted-foreground mb-8">
-        Enter your latest blood glucose reading.
-      </p>
+      {/* Content Area */}
+      <div className="flex-1 overflow-y-auto">
+        <div className="max-w-container-max mx-auto px-4 md:px-8 py-4 md:py-8">
+          {/* Desktop Title */}
+          <div className="hidden md:block mb-6">
+            <h2 className="font-headline-lg text-headline-lg text-on-surface">Glucose Data Entry</h2>
+            <p className="text-on-surface-variant font-body-base">Choose your preferred method to sync your latest reading.</p>
+          </div>
 
-      {/* Tabs */}
-      <div className="bg-white p-1 rounded-2xl border border-slate-200 flex mb-8">
-        <button
-          onClick={() => setMode('manual')}
-          className={`flex-1 py-3 px-4 rounded-xl text-sm font-semibold transition-all ${
-            mode === 'manual' ? 'bg-primary text-white shadow-md' : 'text-slate-500 hover:text-slate-900'
-          }`}
-        >
-          Manual Entry
-        </button>
-        <button
-          onClick={() => setMode('camera')}
-          className={`flex-1 py-3 px-4 rounded-xl text-sm font-semibold transition-all ${
-            mode === 'camera' ? 'bg-primary text-white shadow-md' : 'text-slate-500 hover:text-slate-900'
-          }`}
-        >
-          Scan Monitor
-        </button>
-      </div>
+          {/* Desktop Camera + Instructions */}
+          <div className="hidden md:grid grid-cols-12 gap-gutter mb-10">
+            <div className="col-span-7 lg:col-span-8 overflow-hidden rounded-xl bg-on-surface relative shadow-[0px_4px_20px_rgba(0,92,200,0.05)] h-[460px]">
+              <div className="absolute inset-0 bg-slate-900 flex items-center justify-center">
+                <img
+                  alt="Camera View"
+                  className="w-full h-full object-cover opacity-60"
+                  src="https://lh3.googleusercontent.com/aida-public/AB6AXuB_a_5iz7vGt7ol88CDU2M_Z_jWFqrAiwH0lgBzALXYVJuCpwPG_e5ImkNj8lMz0uoijfrKquMEb__VlJIqWDfD1GFhrVxLSEursSTtFdVPoQt8Le9uzltFXwCZnnxK8jjweT-aK2m7WUdVu7i2wcgz-pA61n4CtAtmx69WzzOUifHoHVCAKMee5Kz5ovuUs6UFQcIPgJTfa4USu_CmWAwOxGZZqgZ9URxERU2MyhBfQGjC9Ide28BY9aoT8VoXvliW10qIJZGb1Q"
+                />
+                <div className="absolute inset-0 bg-gradient-to-b from-primary/10 via-transparent to-primary/10" />
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <div className="relative w-64 h-40 border-2 border-white/20 rounded-lg">
+                    <div className="absolute top-0 left-0 w-10 h-10 border-t-4 border-l-4 border-primary rounded-tl-lg" />
+                    <div className="absolute top-0 right-0 w-10 h-10 border-t-4 border-r-4 border-primary rounded-tr-lg" />
+                    <div className="absolute bottom-0 left-0 w-10 h-10 border-b-4 border-l-4 border-primary rounded-bl-lg" />
+                    <div className="absolute bottom-0 right-0 w-10 h-10 border-b-4 border-r-4 border-primary rounded-br-lg" />
+                    <div className="absolute top-1/2 left-0 w-full h-[2px] bg-primary shadow-[0_0_15px_#00459a]" />
+                  </div>
+                </div>
+              </div>
 
-      <div className="bg-white rounded-3xl p-8 shadow-sm border border-slate-100 flex-1 flex flex-col">
-        
-        {mode === 'manual' ? (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-8">
-            <div className="space-y-4">
-              <label className="text-sm font-bold text-slate-700 uppercase tracking-wider">Test Type</label>
-              <div className="grid grid-cols-2 gap-3">
-                <button
-                  onClick={() => setTestType('fasting')}
-                  className={`p-3 rounded-xl border-2 text-center font-medium transition-all ${
-                    testType === 'fasting'
-                      ? 'border-primary bg-primary/5 text-primary'
-                      : 'border-slate-100'
-                  }`}
-                >
-                  Fasting
-                  <span className="block text-xs font-normal opacity-70 mt-1">No food 8h+</span>
+              <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-4 z-10">
+                <button className="bg-white/10 backdrop-blur-md text-white p-4 rounded-full border border-white/20 hover:bg-white/20 transition-all active:scale-95">
+                  <span className="material-symbols-outlined">flash_on</span>
                 </button>
                 <button
-                  onClick={() => setTestType('random')}
-                  className={`p-3 rounded-xl border-2 text-center font-medium transition-all ${
-                    testType === 'random'
-                      ? 'border-primary bg-primary/5 text-primary'
-                      : 'border-slate-100'
-                  }`}
+                  onClick={() => setShowCamera(true)}
+                  className="bg-primary text-white px-8 py-4 rounded-full font-title-md flex items-center gap-2 shadow-lg hover:bg-primary-container transition-all active:scale-95"
                 >
-                  Random
-                  <span className="block text-xs font-normal opacity-70 mt-1">Any time</span>
+                  <span className="material-symbols-outlined">photo_camera</span>
+                  Capture Reading
+                </button>
+                <button className="bg-white/10 backdrop-blur-md text-white p-4 rounded-full border border-white/20 hover:bg-white/20 transition-all active:scale-95">
+                  <span className="material-symbols-outlined">sync</span>
                 </button>
               </div>
             </div>
 
-            <div className="space-y-4">
-               <label className="text-sm font-bold text-slate-700 uppercase tracking-wider">Reading</label>
-               <div className="flex items-center gap-2">
-                 <Input
-                   type="number"
-                   placeholder="0"
-                   value={value}
-                   onChange={(e) => {
-                     setValue(e.target.value);
-                     setValidationError('');
-                     setValidationWarning('');
-                     if (e.target.value) {
-                       const validation = validateGlucose(e.target.value, unit);
-                       if (!validation.isValid) {
-                         setValidationError(validation.error || '');
-                       } else if (validation.warning) {
-                         setValidationWarning(validation.warning);
-                       }
-                     }
-                   }}
-                   className={`text-4xl h-20 rounded-2xl text-center font-display font-bold ${
-                     validationError ? 'border-red-500 border-2' : validationWarning ? 'border-orange-500 border-2' : ''
-                   }`}
-                   min="0"
-                   step="0.1"
-                 />
-                 <button
-                   onClick={() => setUnit(unit === 'mg/dL' ? 'mmol/L' : 'mg/dL')}
-                   className="h-20 w-24 rounded-2xl bg-slate-100 font-semibold text-slate-600 flex flex-col items-center justify-center gap-1 active:scale-95 transition-transform"
-                 >
-                   <RefreshCcw className="w-4 h-4 opacity-50" />
-                   {unit}
-                 </button>
-               </div>
-               {validationError && (
-                 <div className="flex items-center gap-2 p-3 bg-red-50 border border-red-200 rounded-lg">
-                   <AlertCircle className="w-4 h-4 text-red-600 flex-shrink-0" />
-                   <p className="text-sm text-red-600">{validationError}</p>
-                 </div>
-               )}
-               {validationWarning && !validationError && (
-                 <div className="flex items-center gap-2 p-3 bg-orange-50 border border-orange-200 rounded-lg">
-                   <AlertTriangle className="w-4 h-4 text-orange-600 flex-shrink-0" />
-                   <p className="text-sm text-orange-600">{validationWarning}</p>
-                 </div>
-               )}
+            <div className="col-span-5 lg:col-span-4">
+              <div className="glass-card p-6 rounded-xl h-full flex flex-col justify-between border border-primary/10 shadow-[0px_4px_20px_rgba(0,92,200,0.05)]">
+                <div>
+                  <div className="flex items-center gap-3 mb-6">
+                    <div className="w-10 h-10 rounded-lg bg-primary-container/10 flex items-center justify-center text-primary">
+                      <span className="material-symbols-outlined">info</span>
+                    </div>
+                    <h3 className="font-title-md text-title-md text-on-surface">How to Scan</h3>
+                  </div>
+                  <ul className="space-y-6">
+                    <li className="flex gap-4">
+                      <span className="flex-shrink-0 w-6 h-6 rounded-full bg-secondary-container text-on-secondary-container flex items-center justify-center text-[12px] font-bold">1</span>
+                      <p className="text-on-surface-variant text-body-sm">Hold your glucose meter steady within the highlighted frame.</p>
+                    </li>
+                    <li className="flex gap-4">
+                      <span className="flex-shrink-0 w-6 h-6 rounded-full bg-secondary-container text-on-secondary-container flex items-center justify-center text-[12px] font-bold">2</span>
+                      <p className="text-on-surface-variant text-body-sm">Ensure the screen is well-lit and free of glare or reflections.</p>
+                    </li>
+                    <li className="flex gap-4">
+                      <span className="flex-shrink-0 w-6 h-6 rounded-full bg-secondary-container text-on-secondary-container flex items-center justify-center text-[12px] font-bold">3</span>
+                      <p className="text-on-surface-variant text-body-sm">Wait for confirmation before saving the scan.</p>
+                    </li>
+                  </ul>
+                </div>
+                <div className="mt-8 pt-8 border-t border-outline-variant/30">
+                  <p className="text-on-surface-variant text-body-sm mb-4 text-center">Scan not working?</p>
+                  <button
+                    onClick={() => setView('manual')}
+                    className="w-full py-4 border border-outline text-on-surface font-title-md rounded-xl hover:bg-surface-container-low transition-all active:scale-[0.98]"
+                  >
+                    Enter Manually
+                  </button>
+                </div>
+              </div>
             </div>
-          </motion.div>
-        ) : (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex-1 flex flex-col items-center justify-center text-center space-y-6">
-            <div className="w-24 h-24 bg-blue-50 rounded-full flex items-center justify-center relative overflow-hidden">
-              {isProcessing ? (
-                <Loader2 className="w-10 h-10 text-primary animate-spin" />
-              ) : (
-                <Camera className="w-10 h-10 text-primary" />
-              )}
-            </div>
-            
-            <div>
-              <h3 className="text-lg font-bold">Take a Photo</h3>
-              <p className="text-sm text-muted-foreground mt-1 max-w-[200px] mx-auto">
-                Snap a clear picture of your glucometer screen.
-              </p>
-            </div>
+          </div>
 
-            <input 
-              type="file" 
-              accept="image/*" 
-              className="hidden" 
-              ref={fileInputRef}
-              onChange={(e) => handleImageUpload(e)}
-            />
+          {/* Desktop Manual Card */}
+          <div className="hidden md:block mt-10 max-w-md mx-auto">
+            <div className="glass-card p-8 rounded-xl shadow-[0px_4px_20px_rgba(0,92,200,0.05)] border border-primary/10">
+              <div className="text-center mb-8">
+                <h3 className="font-title-md text-title-md text-primary mb-2">Manual Reading</h3>
+                <p className="text-on-surface-variant text-body-sm">Please enter the precise mg/dL value from your meter.</p>
+              </div>
+              <div className="space-y-6">
+                <div className="relative">
+                  <label className="absolute -top-3 left-4 px-1 bg-white text-on-surface-variant text-[12px] font-semibold">Glucose Level</label>
+                  <input
+                    type="number"
+                    value={value}
+                    onChange={(e) => setValue(e.target.value)}
+                    placeholder="000"
+                    className="w-full text-center text-[48px] font-bold py-6 border-2 border-outline-variant rounded-xl focus:border-primary focus:ring-0 text-primary placeholder:text-surface-container-highest transition-all"
+                  />
+                  <span className="absolute bottom-4 right-6 text-on-surface-variant font-bold">mg/dL</span>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="relative">
+                    <label className="block text-label-caps font-label-caps text-on-surface-variant mb-2">Time</label>
+                    <input className="w-full p-3 border border-outline-variant rounded-lg focus:border-primary focus:ring-0 outline-none" type="time" defaultValue="14:30" />
+                  </div>
+                  <div className="relative">
+                    <label className="block text-label-caps font-label-caps text-on-surface-variant mb-2">Meal State</label>
+                    <select
+                      value={timing}
+                      onChange={(e) => setTiming(e.target.value as any)}
+                      className="w-full p-3 border border-outline-variant rounded-lg focus:border-primary focus:ring-0 outline-none appearance-none bg-white cursor-pointer"
+                    >
+                      <option value="fasting">Fasting</option>
+                      <option value="before">Pre-meal</option>
+                      <option value="after">Post-meal</option>
+                      <option value="bedtime">Bedtime</option>
+                    </select>
+                  </div>
+                </div>
+                <button
+                  onClick={handleNext}
+                  disabled={!value}
+                  className="w-full py-4 bg-primary text-white font-title-md rounded-xl shadow-lg hover:shadow-xl transition-all active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Save Reading
+                </button>
+              </div>
+            </div>
+          </div>
 
-            <div className="grid grid-cols-2 gap-3 w-full">
-              <Button
-                size="lg"
-                className="w-full"
-                disabled={isProcessing}
-                onClick={() => setShowCamera(true)}
+          {/* View Switcher Tabs */}
+          <div className="md:hidden bg-surface-container flex p-1 rounded-lg mb-6 border border-outline-variant/20">
+            <button 
+              onClick={() => setView('manual')}
+              className={`flex-1 py-2 px-4 rounded-md text-body-sm font-body-base transition-all ${
+                view === 'manual' 
+                  ? 'bg-surface text-primary shadow-sm font-semibold' 
+                  : 'text-on-surface-variant'
+              }`}
+            >
+              Manual Entry
+            </button>
+            <button 
+              onClick={() => setView('camera')}
+              className={`flex-1 py-2 px-4 rounded-md text-body-sm font-body-base transition-all ${
+                view === 'camera' 
+                  ? 'bg-surface text-primary shadow-sm font-semibold' 
+                  : 'text-on-surface-variant'
+              }`}
+            >
+              Camera Scan
+            </button>
+          </div>
+
+          {/* Manual Entry Section */}
+          {view === 'manual' && (
+            <motion.section 
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="md:hidden space-y-4"
+            >
+              {/* Glucose Input Card */}
+              <div className="bg-surface border border-outline-variant/30 rounded-2xl p-5 shadow-sm">
+                {/* Header */}
+                <div className="flex justify-between items-center mb-4">
+                  <label className="text-title-md font-title-md text-on-surface">Glucose Value</label>
+                  <div className="flex bg-secondary-fixed rounded-full p-1">
+                    <button 
+                      onClick={() => setUnit('mg/dL')}
+                      className={`px-3 py-0.5 rounded-full text-label-caps transition-all text-sm ${
+                        unit === 'mg/dL' 
+                          ? 'bg-surface text-primary shadow-sm' 
+                          : 'text-on-secondary-fixed-variant'
+                      }`}
+                    >
+                      mg/dL
+                    </button>
+                    <button 
+                      onClick={() => setUnit('mmol/L')}
+                      className={`px-3 py-0.5 rounded-full text-label-caps transition-all text-sm ${
+                        unit === 'mmol/L' 
+                          ? 'bg-surface text-primary shadow-sm' 
+                          : 'text-on-secondary-fixed-variant'
+                      }`}
+                    >
+                      mmol/L
+                    </button>
+                  </div>
+                </div>
+
+                {/* Large Input Display */}
+                <div className="flex items-center justify-center py-4 border-b border-outline-variant/20">
+                  <input 
+                    type="number" 
+                    value={value}
+                    onChange={(e) => setValue(e.target.value)}
+                    placeholder="000" 
+                    className="w-full text-center text-primary font-display-xl text-5xl bg-transparent border-none focus:ring-0 placeholder:text-outline-variant/40 outline-none"
+                  />
+                </div>
+
+                {/* Timing & Feeling Grid */}
+                <div className="grid grid-cols-2 gap-4 mt-5">
+                  {/* Timing */}
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-label-caps text-on-surface-variant font-label-caps text-xs">Timing</label>
+                    <select 
+                      value={timing}
+                      onChange={(e) => setTiming(e.target.value as any)}
+                      className="w-full bg-surface-container-low border border-outline-variant rounded-lg text-body-sm text-on-surface p-2 focus:ring-2 focus:ring-primary focus:border-transparent outline-none cursor-pointer font-body-sm"
+                    >
+                      <option value="before">Before Meal</option>
+                      <option value="after">After Meal</option>
+                      <option value="fasting">Fasting</option>
+                      <option value="bedtime">Bedtime</option>
+                    </select>
+                  </div>
+
+                  {/* Feeling */}
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-label-caps text-on-surface-variant font-label-caps text-xs">Feeling</label>
+                    <div className="flex gap-1.5">
+                      {feelingEmojis.map((f) => (
+                        <button
+                          key={f.id}
+                          onClick={() => setFeeling(f.id)}
+                          className={`flex-1 p-2 rounded-lg text-lg transition-all ${
+                            feeling === f.id 
+                              ? 'bg-primary shadow-md' 
+                              : 'bg-surface-container-low hover:bg-surface-container'
+                          }`}
+                        >
+                          {f.emoji}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* History Cards */}
+              <div className="grid grid-cols-2 gap-3">
+                <div className="bg-surface-container-high rounded-xl p-3 border border-outline-variant/20">
+                  <span className="text-label-caps text-on-surface-variant font-label-caps block mb-2 text-xs">LAST ENTRY</span>
+                  <div className="flex items-baseline gap-1">
+                    <span className="text-title-md text-primary font-title-md">98</span>
+                    <span className="text-body-sm text-on-surface-variant text-xs">mg/dL</span>
+                  </div>
+                  <span className="text-body-sm text-on-surface-variant block mt-1 text-xs">2h ago</span>
+                </div>
+
+                <div className="bg-secondary-container rounded-xl p-3 border border-outline-variant/20">
+                  <span className="text-label-caps text-on-secondary-fixed-variant font-label-caps block mb-2 text-xs">AVG 7D</span>
+                  <div className="flex items-baseline gap-1">
+                    <span className="text-title-md text-on-secondary-fixed font-title-md">112</span>
+                    <span className="text-body-sm text-on-secondary-fixed-variant text-xs">mg/dL</span>
+                  </div>
+                  <div className="w-full bg-white/40 h-1 rounded-full mt-2 overflow-hidden">
+                    <div className="bg-primary w-3/4 h-full rounded-full" />
+                  </div>
+                </div>
+              </div>
+
+              {/* Log Button */}
+              <button 
+                onClick={handleNext}
+                disabled={!value}
+                className="w-full bg-primary text-on-primary py-3 rounded-lg font-title-md font-semibold shadow-lg active:scale-95 duration-200 transition-transform disabled:opacity-50 disabled:cursor-not-allowed hover:shadow-xl flex items-center justify-center gap-2 group text-sm"
               >
-                {isProcessing ? 'Analyzing...' : 'Take Photo'}
-              </Button>
+                Log Glucose Level
+                <span className="material-symbols-outlined text-lg group-hover:translate-x-1 transition-transform">arrow_forward</span>
+              </button>
 
-              <Button
-                size="lg"
-                variant="outline"
-                className="w-full"
-                disabled={isProcessing}
-                onClick={() => fileInputRef.current?.click()}
-              >
-                Upload Photo
-              </Button>
-            </div>
-          </motion.div>
-        )}
+              {/* Privacy Message */}
+              <div className="text-center">
+                <p className="text-body-sm text-on-surface-variant flex items-center justify-center gap-1 text-xs">
+                  <span className="material-symbols-outlined text-outline text-base">lock</span>
+                  Your data is encrypted and used only for glucose tracking.
+                </p>
+              </div>
+            </motion.section>
+          )}
+
+          {/* Camera Section */}
+          {view === 'camera' && (
+            <motion.section 
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="md:hidden space-y-4"
+            >
+              <div className="bg-surface border border-outline-variant/30 rounded-2xl p-6 shadow-sm flex flex-col items-center text-center">
+                <div className="w-16 h-16 bg-primary-container rounded-full flex items-center justify-center mb-4">
+                  <span className="material-symbols-outlined text-primary text-4xl">
+                    {isProcessing ? 'sync' : 'photo_camera'}
+                  </span>
+                </div>
+
+                <h3 className="text-title-md font-title-md mb-1 text-sm">Take a Photo</h3>
+                <p className="text-body-sm text-on-surface-variant mb-6 max-w-xs text-xs">
+                  Snap a clear picture of your glucometer screen.
+                </p>
+
+                <input 
+                  type="file" 
+                  accept="image/*" 
+                  className="hidden" 
+                  ref={fileInputRef}
+                  onChange={handleImageUpload}
+                />
+
+                <div className="grid grid-cols-2 gap-3 w-full">
+                  <button
+                    onClick={() => setShowCamera(true)}
+                    disabled={isProcessing}
+                    className="bg-primary text-on-primary py-2 rounded-lg font-label-caps text-label-caps font-semibold active:scale-95 transition-transform disabled:opacity-50 hover:shadow-lg text-xs"
+                  >
+                    {isProcessing ? 'Analyzing...' : 'Take Photo'}
+                  </button>
+                  <button
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={isProcessing}
+                    className="border border-primary bg-surface text-primary py-2 rounded-lg font-label-caps text-label-caps font-semibold active:scale-95 transition-transform disabled:opacity-50 hover:bg-surface-container-low text-xs"
+                  >
+                    Upload Photo
+                  </button>
+                </div>
+              </div>
+            </motion.section>
+          )}
+        </div>
       </div>
 
-      {mode === 'manual' && (
-        <div className="mt-8">
-          <Button 
-            size="lg" 
-            className="w-full text-lg h-14 shadow-lg shadow-blue-500/20" 
-            onClick={handleNext}
-            disabled={!value || !!validationError}
-          >
-            See Results
-          </Button>
+      {/* Bottom Navigation (Mobile) */}
+      <nav className="flex-shrink-0 md:hidden bg-surface border-t border-outline-variant/30 shadow-[0px_-4px_20px_rgba(0,92,200,0.05)]">
+        <div className="flex justify-around items-center py-2">
+          <a href="/" className="flex flex-col items-center gap-0.5 text-on-surface-variant/60 hover:text-primary transition-colors">
+            <span className="material-symbols-outlined text-xl">home</span>
+            <span className="text-label-caps text-[8px]">Home</span>
+          </a>
+          <a href="/screening" className="flex flex-col items-center gap-0.5 text-on-surface-variant/60 hover:text-primary transition-colors">
+            <span className="material-symbols-outlined text-xl">health_and_safety</span>
+            <span className="text-label-caps text-[8px]">Screening</span>
+          </a>
+          <a href="/glucose" className="flex flex-col items-center gap-0.5 text-on-secondary-container bg-secondary-container rounded-full px-3 py-1">
+            <span className="material-symbols-outlined text-xl">add_circle</span>
+            <span className="text-label-caps text-[8px]">Input</span>
+          </a>
+          <a href="/results" className="flex flex-col items-center gap-0.5 text-on-surface-variant/60 hover:text-primary transition-colors">
+            <span className="material-symbols-outlined text-xl">analytics</span>
+            <span className="text-label-caps text-[8px]">Results</span>
+          </a>
+          <a href="/health-tips" className="flex flex-col items-center gap-0.5 text-on-surface-variant/60 hover:text-primary transition-colors">
+            <span className="material-symbols-outlined text-xl">lightbulb</span>
+            <span className="text-label-caps text-[8px]">Health</span>
+          </a>
         </div>
-      )}
-    </div>
+      </nav>
+    </main>
   );
 }
