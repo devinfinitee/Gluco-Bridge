@@ -54,6 +54,78 @@ export default function HealthTips() {
         'Join a support group or counseling',
         'Consider nicotine replacement therapy'
       ]
+    },
+    {
+      icon: 'restaurant',
+      title: 'Nutrition & Blood Sugar',
+      subtitle: 'Eating smart to stay balanced',
+      description: 'What you eat directly impacts your blood sugar levels. Understanding the glycemic index, balancing macronutrients, and timing meals properly are powerful tools for glucose management.',
+      tips: [
+        'Choose low-glycemic foods (whole grains, legumes, vegetables)',
+        'Eat protein and healthy fats with every meal to slow glucose absorption',
+        'Avoid sugary drinks — they spike blood sugar rapidly',
+        'Space meals 4-5 hours apart and avoid skipping breakfast'
+      ]
+    },
+    {
+      icon: 'self_improvement',
+      title: 'Stress & Mental Health',
+      subtitle: 'The hidden glucose trigger',
+      description: 'Chronic stress releases cortisol and adrenaline, which raise blood sugar levels. Anxiety, depression, and burnout can also make it harder to maintain healthy routines.',
+      tips: [
+        'Practice deep breathing or meditation for 10 minutes daily',
+        'Identify and manage personal stress triggers',
+        'Seek professional help if feeling overwhelmed or depressed',
+        'Maintain social connections — isolation worsens outcomes'
+      ]
+    },
+    {
+      icon: 'bedtime',
+      title: 'Sleep & Glucose Control',
+      subtitle: 'Rest is medicine',
+      description: 'Poor sleep disrupts insulin sensitivity and increases hunger hormones. Even one night of bad sleep can make your cells more resistant to insulin the next day.',
+      tips: [
+        'Aim for 7-9 hours of quality sleep every night',
+        'Keep a consistent sleep schedule, even on weekends',
+        'Avoid screens and heavy meals 1-2 hours before bed',
+        'Create a cool, dark, and quiet sleeping environment'
+      ]
+    },
+    {
+      icon: 'water_drop',
+      title: 'Hydration & Kidney Health',
+      subtitle: 'Water is your best friend',
+      description: 'Dehydration concentrates blood sugar levels and strains your kidneys. Diabetes is the leading cause of kidney failure — staying hydrated helps protect these vital organs.',
+      tips: [
+        'Drink at least 8 glasses (2 liters) of water daily',
+        'Replace sugary juices and sodas with water or herbal tea',
+        'Monitor urine color — pale yellow indicates good hydration',
+        'Limit alcohol consumption which dehydrates and affects blood sugar'
+      ]
+    },
+    {
+      icon: 'footprint',
+      title: 'Foot Care & Neuropathy',
+      subtitle: 'Protecting your extremities',
+      description: 'High blood sugar damages nerves in your feet (diabetic neuropathy), reducing sensation. Small cuts or blisters can go unnoticed and lead to serious infections or amputation.',
+      tips: [
+        'Inspect your feet daily for cuts, blisters, or swelling',
+        'Wear comfortable, well-fitting shoes — never walk barefoot',
+        'Keep feet clean, dry, and moisturized (not between toes)',
+        'See a podiatrist at least once a year for professional exams'
+      ]
+    },
+    {
+      icon: 'visibility',
+      title: 'Eye Health & Vision',
+      subtitle: 'Protecting your sight',
+      description: 'Diabetic retinopathy is the leading cause of blindness in working-age adults. High blood sugar damages the tiny blood vessels in your retina, often with no early warning signs.',
+      tips: [
+        'Get a comprehensive dilated eye exam at least once a year',
+        'Report any vision changes (blurriness, floaters) immediately',
+        'Keep blood sugar and blood pressure well controlled',
+        'Wear UV-protective sunglasses outdoors to reduce eye strain'
+      ]
     }
   ];
 
@@ -76,8 +148,8 @@ export default function HealthTips() {
               </p>
             </motion.div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {healthCards.slice(0, 3).map((card, idx) => (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {healthCards.map((card, idx) => (
                 <motion.article
                   key={card.title}
                   initial={{ opacity: 0, y: 14 }}
@@ -94,7 +166,7 @@ export default function HealthTips() {
                   <h3 className="font-title-md text-title-md mb-2 text-on-surface">{card.title}</h3>
                   <p className="font-body-sm text-body-sm text-on-surface-variant mb-6">{card.description}</p>
                   <ul className="space-y-3 opacity-85 group-hover:opacity-100 transition-opacity">
-                    {card.tips.slice(0, 3).map((tip) => (
+                    {card.tips.map((tip) => (
                       <li key={tip} className="flex items-start gap-3">
                         <span className="material-symbols-outlined text-primary text-[18px]">check_circle</span>
                         <span className="text-body-sm text-on-surface-variant">{tip}</span>
@@ -103,28 +175,6 @@ export default function HealthTips() {
                   </ul>
                 </motion.article>
               ))}
-
-              <motion.article
-                initial={{ opacity: 0, y: 14 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.35, delay: 0.2 }}
-                className="group relative bg-primary-container rounded-xl p-6 shadow-[0px_4px_20px_rgba(0,92,200,0.05)] overflow-hidden"
-              >
-                <div className="absolute -right-10 -top-10 w-40 h-40 bg-white/10 rounded-full blur-2xl" />
-                <div className="relative z-10">
-                  <h3 className="font-title-md text-title-md mb-4 text-on-primary-container">Interactive Learning</h3>
-                  <div className="aspect-video bg-surface/20 rounded-lg backdrop-blur-sm mb-4 border border-white/10 overflow-hidden">
-                    <img
-                      alt="Health education"
-                      className="w-full h-full object-cover"
-                      src="https://lh3.googleusercontent.com/aida-public/AB6AXuDG-iHQYXia5l1Q_xUoMpth_rl4tC2lvQR5xr-Lj2G9jfSH_bqD5B9UtfEQI5P95exm1Z6hHrTMXIk1hRJ6E-3PWVOCBtPFQKkSNyrvMB0unwniUG5TwgVxurff2Uvp-kTSkxE-EiKL6J7FP3igt-ACLpcbX8s3pR94H0fy7HdN6PQw-XPJcxVp6j7hk9-3N9AGmKK7WwZrTheaeUkTk5V2PqdNR_-8u1aKhfsyzn_SCl61fvvGMN351grAh5JNPrbnKsTQRT0g6Q"
-                    />
-                  </div>
-                  <button className="w-full py-3 bg-white text-primary font-label-caps text-label-caps rounded-lg hover:bg-primary-fixed transition-colors">
-                    Start Wellness Module
-                  </button>
-                </div>
-              </motion.article>
             </div>
 
             <div className="mt-stack-lg border-t border-outline-variant/30 pt-stack-md">
