@@ -145,42 +145,77 @@ export default function GlucoseEntry() {
             <p className="text-on-surface-variant font-body-base">Choose your preferred method to sync your latest reading.</p>
           </div>
 
-          {/* Desktop Camera + Instructions */}
+          {/* Desktop Camera + Upload Section */}
           <div className="hidden md:grid grid-cols-12 gap-gutter mb-10">
             <div className="col-span-7 lg:col-span-8 overflow-hidden rounded-xl bg-on-surface relative shadow-[0px_4px_20px_rgba(0,92,200,0.05)] h-[460px]">
               <div className="absolute inset-0 bg-slate-900 flex items-center justify-center">
-                <img
-                  alt="Camera View"
-                  className="w-full h-full object-cover opacity-60"
-                  src="https://lh3.googleusercontent.com/aida-public/AB6AXuB_a_5iz7vGt7ol88CDU2M_Z_jWFqrAiwH0lgBzALXYVJuCpwPG_e5ImkNj8lMz0uoijfrKquMEb__VlJIqWDfD1GFhrVxLSEursSTtFdVPoQt8Le9uzltFXwCZnnxK8jjweT-aK2m7WUdVu7i2wcgz-pA61n4CtAtmx69WzzOUifHoHVCAKMee5Kz5ovuUs6UFQcIPgJTfa4USu_CmWAwOxGZZqgZ9URxERU2MyhBfQGjC9Ide28BY9aoT8VoXvliW10qIJZGb1Q"
-                />
-                <div className="absolute inset-0 bg-gradient-to-b from-primary/10 via-transparent to-primary/10" />
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <div className="relative w-64 h-40 border-2 border-white/20 rounded-lg">
-                    <div className="absolute top-0 left-0 w-10 h-10 border-t-4 border-l-4 border-primary rounded-tl-lg" />
-                    <div className="absolute top-0 right-0 w-10 h-10 border-t-4 border-r-4 border-primary rounded-tr-lg" />
-                    <div className="absolute bottom-0 left-0 w-10 h-10 border-b-4 border-l-4 border-primary rounded-bl-lg" />
-                    <div className="absolute bottom-0 right-0 w-10 h-10 border-b-4 border-r-4 border-primary rounded-br-lg" />
-                    <div className="absolute top-1/2 left-0 w-full h-[2px] bg-primary shadow-[0_0_15px_#00459a]" />
-                  </div>
+                <div className="absolute inset-0 bg-gradient-to-br from-primary/20 via-primary/5 to-transparent" />
+                <div className="absolute inset-0 flex flex-col items-center justify-center z-10">
+                  {isProcessing ? (
+                    <motion.div
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      className="flex flex-col items-center gap-4"
+                    >
+                      <div className="w-20 h-20 rounded-full bg-primary/20 backdrop-blur-sm flex items-center justify-center">
+                        <span className="material-symbols-outlined text-primary text-4xl animate-spin">sync</span>
+                      </div>
+                      <p className="text-white/90 font-title-md">Analyzing glucometer image...</p>
+                      <p className="text-white/60 text-body-sm">AI is reading the display values</p>
+                    </motion.div>
+                  ) : (
+                    <>
+                      <div className="relative w-64 h-40 border-2 border-white/20 rounded-lg mb-8">
+                        <div className="absolute top-0 left-0 w-10 h-10 border-t-4 border-l-4 border-primary rounded-tl-lg" />
+                        <div className="absolute top-0 right-0 w-10 h-10 border-t-4 border-r-4 border-primary rounded-tr-lg" />
+                        <div className="absolute bottom-0 left-0 w-10 h-10 border-b-4 border-l-4 border-primary rounded-bl-lg" />
+                        <div className="absolute bottom-0 right-0 w-10 h-10 border-b-4 border-r-4 border-primary rounded-br-lg" />
+                        <div className="absolute top-1/2 left-0 w-full h-[2px] bg-primary shadow-[0_0_15px_#00459a] animate-pulse" />
+                        <div className="absolute inset-0 flex items-center justify-center">
+                          <span className="material-symbols-outlined text-white/40 text-6xl">photo_camera</span>
+                        </div>
+                      </div>
+                      <p className="text-white/70 text-body-sm mb-2">Upload a photo of your glucometer screen</p>
+                    </>
+                  )}
                 </div>
               </div>
 
-              <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-4 z-10">
-                <button className="bg-white/10 backdrop-blur-md text-white p-4 rounded-full border border-white/20 hover:bg-white/20 transition-all active:scale-95">
-                  <span className="material-symbols-outlined">flash_on</span>
-                </button>
-                <button
-                  onClick={() => setShowCamera(true)}
-                  className="bg-primary text-white px-8 py-4 rounded-full font-title-md flex items-center gap-2 shadow-lg hover:bg-primary-container transition-all active:scale-95"
-                >
-                  <span className="material-symbols-outlined">photo_camera</span>
-                  Capture Reading
-                </button>
-                <button className="bg-white/10 backdrop-blur-md text-white p-4 rounded-full border border-white/20 hover:bg-white/20 transition-all active:scale-95">
-                  <span className="material-symbols-outlined">sync</span>
-                </button>
-              </div>
+              {/* Hidden file input for desktop */}
+              <input
+                type="file"
+                accept="image/*"
+                className="hidden"
+                ref={fileInputRef}
+                onChange={handleImageUpload}
+              />
+
+              {!isProcessing && (
+                <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-4 z-10">
+                  <button
+                    onClick={() => setShowCamera(true)}
+                    className="bg-white/10 backdrop-blur-md text-white p-4 rounded-full border border-white/20 hover:bg-white/20 transition-all active:scale-95"
+                    title="Use Camera"
+                  >
+                    <span className="material-symbols-outlined">photo_camera</span>
+                  </button>
+                  <button
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={isProcessing}
+                    className="bg-primary text-white px-8 py-4 rounded-full font-title-md flex items-center gap-2 shadow-lg hover:brightness-110 transition-all active:scale-95 disabled:opacity-50"
+                  >
+                    <span className="material-symbols-outlined">upload</span>
+                    Upload Photo
+                  </button>
+                  <button
+                    onClick={() => setShowCamera(true)}
+                    className="bg-white/10 backdrop-blur-md text-white p-4 rounded-full border border-white/20 hover:bg-white/20 transition-all active:scale-95"
+                    title="Capture with Camera"
+                  >
+                    <span className="material-symbols-outlined">center_focus_strong</span>
+                  </button>
+                </div>
+              )}
             </div>
 
             <div className="col-span-5 lg:col-span-4">
@@ -195,7 +230,7 @@ export default function GlucoseEntry() {
                   <ul className="space-y-6">
                     <li className="flex gap-4">
                       <span className="flex-shrink-0 w-6 h-6 rounded-full bg-secondary-container text-on-secondary-container flex items-center justify-center text-[12px] font-bold">1</span>
-                      <p className="text-on-surface-variant text-body-sm">Hold your glucose meter steady within the highlighted frame.</p>
+                      <p className="text-on-surface-variant text-body-sm">Take a clear photo of your glucometer screen or upload an existing one.</p>
                     </li>
                     <li className="flex gap-4">
                       <span className="flex-shrink-0 w-6 h-6 rounded-full bg-secondary-container text-on-secondary-container flex items-center justify-center text-[12px] font-bold">2</span>
@@ -203,15 +238,18 @@ export default function GlucoseEntry() {
                     </li>
                     <li className="flex gap-4">
                       <span className="flex-shrink-0 w-6 h-6 rounded-full bg-secondary-container text-on-secondary-container flex items-center justify-center text-[12px] font-bold">3</span>
-                      <p className="text-on-surface-variant text-body-sm">Wait for confirmation before saving the scan.</p>
+                      <p className="text-on-surface-variant text-body-sm">The AI will read the value and auto-fill the form below.</p>
                     </li>
                   </ul>
                 </div>
                 <div className="mt-8 pt-8 border-t border-outline-variant/30">
-                  <p className="text-on-surface-variant text-body-sm mb-4 text-center">Scan not working?</p>
+                  <p className="text-on-surface-variant text-body-sm mb-4 text-center">Prefer to type it in?</p>
                   <button
-                    onClick={() => setView('manual')}
                     className="w-full py-4 border border-outline text-on-surface font-title-md rounded-xl hover:bg-surface-container-low transition-all active:scale-[0.98]"
+                    onClick={() => {
+                      const el = document.getElementById('desktop-manual-card');
+                      el?.scrollIntoView({ behavior: 'smooth' });
+                    }}
                   >
                     Enter Manually
                   </button>
@@ -222,7 +260,7 @@ export default function GlucoseEntry() {
 
           {/* Desktop Manual Card */}
           <div className="hidden md:block mt-10 max-w-md mx-auto">
-            <div className="glass-card p-8 rounded-xl shadow-[0px_4px_20px_rgba(0,92,200,0.05)] border border-primary/10">
+            <div id="desktop-manual-card" className="glass-card p-8 rounded-xl shadow-[0px_4px_20px_rgba(0,92,200,0.05)] border border-primary/10">
               <div className="text-center mb-8">
                 <h3 className="font-title-md text-title-md text-primary mb-2">Manual Reading</h3>
                 <p className="text-on-surface-variant text-body-sm">Please enter the precise mg/dL value from your meter.</p>
@@ -471,31 +509,7 @@ export default function GlucoseEntry() {
         </div>
       </div>
 
-      {/* Bottom Navigation (Mobile) */}
-      <nav className="flex-shrink-0 md:hidden bg-surface border-t border-outline-variant/30 shadow-[0px_-4px_20px_rgba(0,92,200,0.05)]">
-        <div className="flex justify-around items-center py-2">
-          <a href="/" className="flex flex-col items-center gap-0.5 text-on-surface-variant/60 hover:text-primary transition-colors">
-            <span className="material-symbols-outlined text-xl">home</span>
-            <span className="text-label-caps text-[8px]">Home</span>
-          </a>
-          <a href="/screening" className="flex flex-col items-center gap-0.5 text-on-surface-variant/60 hover:text-primary transition-colors">
-            <span className="material-symbols-outlined text-xl">health_and_safety</span>
-            <span className="text-label-caps text-[8px]">Screening</span>
-          </a>
-          <a href="/glucose" className="flex flex-col items-center gap-0.5 text-on-secondary-container bg-secondary-container rounded-full px-3 py-1">
-            <span className="material-symbols-outlined text-xl">add_circle</span>
-            <span className="text-label-caps text-[8px]">Input</span>
-          </a>
-          <a href="/results" className="flex flex-col items-center gap-0.5 text-on-surface-variant/60 hover:text-primary transition-colors">
-            <span className="material-symbols-outlined text-xl">analytics</span>
-            <span className="text-label-caps text-[8px]">Results</span>
-          </a>
-          <a href="/health-tips" className="flex flex-col items-center gap-0.5 text-on-surface-variant/60 hover:text-primary transition-colors">
-            <span className="material-symbols-outlined text-xl">lightbulb</span>
-            <span className="text-label-caps text-[8px]">Health</span>
-          </a>
-        </div>
-      </nav>
+
     </main>
   );
 }
